@@ -1,0 +1,207 @@
+# Hybrid IDS - .gitignore
+
+# ============================================
+# Build artifacts
+# ============================================
+build/
+*.o
+*.a
+*.so
+*.dylib
+*.dll
+*.exe
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+*.cmake
+!CMakeLists.txt
+
+# ============================================
+# Python
+# ============================================
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv
+
+# Jupyter Notebook
+.ipynb_checkpoints
+*.ipynb
+
+# Distribution / packaging
+.Python
+dist/
+eggs/
+.eggs/
+*.egg-info/
+*.egg
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+
+# ============================================
+# Machine Learning
+# ============================================
+# Models (large binary files - use Git LFS or exclude)
+*.pt
+*.pth
+*.pkl
+*.joblib
+*.h5
+*.onnx
+*.pb
+
+# Datasets (exclude large files)
+data/raw/*.csv
+data/raw/*.pcap
+data/raw/*.pcapng
+data/processed/*.csv
+*.parquet
+
+# MLflow
+mlruns/
+mlartifacts/
+
+# Weights & Biases
+wandb/
+
+# ============================================
+# IDEs and Editors
+# ============================================
+# VSCode
+.vscode/
+*.code-workspace
+
+# PyCharm
+.idea/
+*.iml
+
+# Vim
+*.swp
+*.swo
+*~
+
+# Emacs
+*~
+\#*\#
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# ============================================
+# OS Files
+# ============================================
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+*~
+
+# ============================================
+# Logs
+# ============================================
+*.log
+logs/
+*.log.*
+
+# ============================================
+# Network capture files
+# ============================================
+*.pcap
+*.pcapng
+*.cap
+
+# ============================================
+# Configuration (sensitive)
+# ============================================
+# Keep example configs, ignore actual configs
+config/*.yaml
+config/*.json
+!config/*.yaml.example
+!config/*.json.example
+
+# Secrets
+.env
+.env.local
+secrets/
+*.key
+*.pem
+*.crt
+
+# ============================================
+# Database
+# ============================================
+*.db
+*.sqlite
+*.sqlite3
+
+# ============================================
+# Documentation build
+# ============================================
+docs/_build/
+docs/_static/
+docs/_templates/
+site/
+
+# ============================================
+# Temporary files
+# ============================================
+tmp/
+temp/
+*.tmp
+*.bak
+*.swp
+
+# ============================================
+# Docker
+# ============================================
+docker-compose.override.yml
+
+# ============================================
+# Backup files
+# ============================================
+*.orig
+*.backup
+*~
+
+# ============================================
+# Project specific
+# ============================================
+# Packet captures for testing (if too large)
+tests/data/*.pcap
+
+# Benchmark results
+benchmarks/results/
+
+# Alert database (development)
+alerts.db

@@ -1,0 +1,312 @@
+# ============================================
+# AI Analysis Engine Configuration
+# ============================================
+
+system:
+  log_level: info  # debug, info, warning, error, critical
+  log_file: /var/log/hybrid-ids/ai_engine.log
+  pid_file: /var/run/hybrid-ids/ai_engine.pid
+
+models:
+  # Base directory for model files
+  base_path: /opt/hybrid-ids/models/
+
+  # Autoencoder (Anomaly Detection)
+  autoencoder:
+    enabled: true
+    model_path: autoencoder_v1.pt
+
+    # Reconstruction error threshold (95th percentile of normal traffic)
+    threshold: 0.15
+
+    # Device: cuda, cuda:0, cuda:1, cpu
+    device: cpu
+
+    # Model version
+    version: "1.0.0"
+
+    # Input dimension (number of features)
+    input_dim: 41
+
+  # Random Forest (Attack Classification)
+  random_forest:
+    enabled: true
+    model_path: random_forest_v1.pkl
+
+    # Confidence threshold for classification
+    confidence_threshold: 0.7
+
+    # Number of estimators (trees)
+    n_estimators: 100
+
+    # Attack labels
+    attack_labels:
+      - Normal
+      - DoS
+      - Probe
+      - R2L
+      - U2R
+      - DDoS
+      - Botnet
+
+  # Additional models (optional)
+  lstm:
+    enabled: false
+    model_path: lstm_v1.pt
+    sequence_length: 10
+    device: cpu
+
+  isolation_forest:
+    enabled: false
+    model_path: isolation_forest_v1.pkl
+    contamination: 0.1
+
+inference:
+  # Batch size for model inference
+  # Higher = better throughput, lower = lower latency
+  batch_size: 32
+
+  # Maximum batch wait time (milliseconds)
+  # Send batch even if not full after this time
+  batch_timeout_ms: 50
+
+  # Inference timeout (milliseconds)
+  inference_timeout_ms: 100
+
+  # Number of inference workers
+  num_workers: 2
+
+  # GPU memory fraction (if using GPU)
+  gpu_memory_fraction: 0.5
+
+  # Enable mixed precision inference (faster on modern GPUs)
+  use_mixed_precision: false
+
+preprocessing:
+  # Scaler for feature normalization
+  scaler_path: /opt/hybrid-ids/models/scaler.pkl
+  scaler_type: standard  # standard, minmax, robust
+
+  # Feature names (must match training data)
+  feature_names:
+    - duration
+    - protocol
+    - src_port
+    - dst_port
+    - total_fwd_packets
+    - total_bwd_packets
+    - total_fwd_bytes
+    - total_bwd_bytes
+    - fwd_packet_rate
+    - bwd_packet_rate
+    - fwd_iat_mean
+    - fwd_iat_std
+    - fwd_iat_min
+    - fwd_iat_max
+    - bwd_iat_mean
+    - bwd_iat_std
+    - bwd_iat_min
+    - bwd_iat_max
+    - fwd_pkt_len_mean
+    - fwd_pkt_len_std
+    - fwd_pkt_len_min
+    - fwd_pkt_len_max
+    - bwd_pkt_len_mean
+    - bwd_pkt_len_std
+    - bwd_pkt_len_min
+    - bwd_pkt_len_max
+    - flow_bytes_per_sec
+    - flow_packets_per_sec
+    - fwd_header_length
+    - bwd_header_length
+    - syn_count
+    - ack_count
+    - fin_count
+    - rst_count
+    - psh_count
+    - urg_count
+    - down_up_ratio
+    - avg_packet_size
+    - fwd_segment_size_avg
+    - bwd_segment_size_avg
+    - idle_mean
+
+  # Handle missing values
+  fill_missing: true
+  missing_value_strategy: mean  # mean, median, zero, drop
+
+  # Feature engineering
+  create_derived_features: true
+
+ensemble:
+  # Enable ensemble fusion
+  enabled: true
+
+  # Fusion strategy: weighted_vote, max_confidence, stacking
+  strategy: weighted_vote
+
+  # Model weights for ensemble
+  weights:
+    autoencoder: 0.4
+    random_forest: 0.4
+    signature: 0.2  # Signature rule matching from NIDS
+
+  # Final confidence threshold for alert generation
+  confidence_threshold: 0.7
+
+  # Risk score calculation
+  # Risk score = weighted sum of all model outputs (0-100)
+  normalize_scores: true
+
+alerts:
+  # Alert generation settings
+  enabled: true
+
+  # Minimum risk score to generate alert (0-100)
+  min_risk_score: 50
+
+  # Alert deduplication window (seconds)
+  # Suppress duplicate alerts for same src/dst within this window
+  deduplication_window: 60
+
+  # Alert enrichment
+  enrich_with_geolocation: false
+  enrich_with_reputation: false
+
+  # Alert severity mapping
+  severity_mapping:
+    critical:
+      min_score: 80
+      attack_types: [DDoS, Botnet, R2L]
+    high:
+      min_score: 60
+      attack_types: [DoS, Probe]
+    medium:
+      min_score: 40
+      attack_types: [U2R]
+    low:
+      min_score: 20
+      attack_types: []
+
+  # Recommended actions per attack type
+  recommendations:
+    DoS:
+      - "Block source IP temporarily"
+      - "Activate rate limiting"
+      - "Notify network administrator"
+    Probe:
+      - "Monitor source IP for further activity"
+      - "Review firewall rules"
+      - "Check for unauthorized access attempts"
+    R2L:
+      - "Investigate source IP"
+      - "Review authentication logs"
+      - "Consider temporary IP ban"
+    U2R:
+      - "Immediate investigation required"
+      - "Review system access logs"
+      - "Check for privilege escalation"
+    DDoS:
+      - "Activate DDoS mitigation"
+      - "Contact ISP/upstream provider"
+      - "Enable traffic scrubbing"
+    Botnet:
+      - "Isolate affected systems"
+      - "Scan for malware"
+      - "Block C&C communication"
+
+ipc:
+  # ZeroMQ endpoint to receive data from NIDS
+  subscribe_endpoint: "tcp://localhost:5555"
+
+  # Subscribe to specific topics (empty = all)
+  topics: []
+
+  # ZeroMQ endpoint to send alerts to MCP
+  publish_endpoint: "tcp://localhost:5556"
+
+  # High water mark
+  high_water_mark: 10000
+
+  # Socket options
+  linger_ms: 1000
+  conflate: false  # Keep only latest message
+
+learning:
+  # Enable online/incremental learning
+  online_learning: false
+
+  # Trigger retraining conditions
+  retrain_on_accuracy_drop: true
+  min_accuracy: 0.90
+
+  # Retraining schedule
+  retrain_interval_days: 7
+
+  # Minimum samples for retraining
+  min_samples: 10000
+
+  # Learning rate for online updates
+  learning_rate: 0.001
+
+  # Model versioning
+  keep_previous_versions: 3
+  model_registry: mlflow  # mlflow, local, s3
+
+database:
+  # Store predictions for model monitoring
+  store_predictions: true
+
+  # Database connection (for storing predictions and metrics)
+  connection_string: "postgresql://ids_user:password@localhost:5432/hybrid_ids"
+
+  # Batch insert size
+  batch_size: 1000
+
+  # Retention period for predictions (days)
+  retention_days: 30
+
+monitoring:
+  # Enable model performance monitoring
+  enabled: true
+
+  # Metrics to track
+  track_inference_time: true
+  track_batch_size: true
+  track_queue_size: true
+
+  # Prometheus metrics export
+  prometheus:
+    enabled: true
+    port: 9090
+
+  # Performance alerts
+  alert_on_slow_inference: true
+  slow_inference_threshold_ms: 100
+
+  # Model drift detection
+  detect_drift: true
+  drift_detection_method: ks_test  # ks_test, psi, chi_square
+  drift_threshold: 0.05
+
+advanced:
+  # Model serving optimization
+  use_onnx_runtime: false
+  onnx_model_path: /opt/hybrid-ids/models/model.onnx
+
+  # Quantization (reduce model size, faster inference)
+  quantize_model: false
+  quantization_dtype: int8
+
+  # Explainability
+  enable_shap: false
+  shap_samples: 100
+
+  # Multi-model serving
+  model_serving_framework: custom  # custom, triton, torchserve
+
+  # Experimental features
+  experimental:
+    federated_learning: false
+    adversarial_training: false
+    continual_learning: false

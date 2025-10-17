@@ -1,0 +1,395 @@
+# ============================================
+# MCP (Master Control Plane) Configuration
+# ============================================
+
+system:
+  mode: production  # development, staging, production
+  log_level: info
+  log_file: /var/log/hybrid-ids/mcp.log
+  pid_file: /var/run/hybrid-ids/mcp.pid
+
+  # Timezone for timestamps
+  timezone: UTC
+
+components:
+  nids:
+    enabled: true
+    binary_path: /usr/local/bin/nids
+    config_path: /etc/hybrid-ids/config/nids.yaml
+    working_directory: /opt/hybrid-ids
+    auto_restart: true
+    max_restarts: 3
+    restart_delay_seconds: 5
+
+    # Health check
+    health_check:
+      enabled: true
+      interval_seconds: 30
+      timeout_seconds: 5
+      endpoint: "tcp://localhost:5557"
+
+    # Resource limits
+    limits:
+      max_cpu_percent: 60
+      max_memory_mb: 4096
+
+  ai_engine:
+    enabled: true
+    python_path: /opt/hybrid-ids/venv/bin/python
+    script_path: /opt/hybrid-ids/src/ai/inference/main.py
+    config_path: /etc/hybrid-ids/config/ai_engine.yaml
+    working_directory: /opt/hybrid-ids
+    auto_restart: true
+    max_restarts: 3
+    restart_delay_seconds: 5
+
+    # Health check
+    health_check:
+      enabled: true
+      interval_seconds: 30
+      timeout_seconds: 5
+      endpoint: "tcp://localhost:5558"
+
+    # Resource limits
+    limits:
+      max_cpu_percent: 70
+      max_memory_mb: 8192
+
+api:
+  # REST API server settings
+  host: 0.0.0.0
+  port: 8000
+  workers: 4
+
+  # CORS settings
+  cors:
+    enabled: true
+    allow_origins:
+      - "http://localhost:3000"
+      - "http://localhost:8080"
+    allow_methods:
+      - GET
+      - POST
+      - PUT
+      - DELETE
+    allow_headers:
+      - "*"
+
+  # Authentication
+  auth:
+    enabled: false  # Enable in production
+    method: jwt  # jwt, api_key, oauth
+    secret_key: "change-this-in-production"
+    token_expiry_hours: 24
+
+  # Rate limiting
+  rate_limit:
+    enabled: true
+    requests_per_minute: 100
+    requests_per_hour: 1000
+
+  # API documentation
+  docs:
+    enabled: true
+    path: /docs
+    redoc_path: /redoc
+
+database:
+  # Main database for alerts and system data
+  type: postgresql  # postgresql, mysql, sqlite
+  host: localhost
+  port: 5432
+  database: hybrid_ids
+  username: ids_user
+  password: change_me_in_production
+
+  # Connection pool
+  pool_size: 10
+  max_overflow: 20
+  pool_timeout: 30
+
+  # SQLite (for development)
+  sqlite_path: /opt/hybrid-ids/data/hybrid_ids.db
+
+  # Backup
+  backup:
+    enabled: true
+    interval_hours: 6
+    retention_days: 7
+    path: /opt/hybrid-ids/backups
+
+alerts:
+  # Alert management
+  storage:
+    database: true
+    file: true
+    syslog: true
+
+  # Alert retention
+  retention_days: 90
+
+  # Alert aggregation
+  aggregation:
+    enabled: true
+    window_seconds: 300
+    similar_alert_threshold: 0.8
+
+  # Alert forwarding
+  forwarding:
+    siem:
+      enabled: false
+      type: splunk  # splunk, elastic, qradar, sentinel
+      endpoint: "https://splunk.example.com:8088/services/collector"
+      token: "your-hec-token"
+
+    email:
+      enabled: false
+      smtp_server: smtp.example.com
+      smtp_port: 587
+      username: alerts@example.com
+      password: change_me
+      recipients:
+        - admin@example.com
+        - security@example.com
+      severity_filter: [critical, high]
+
+    webhook:
+      enabled: false
+      url: "https://hooks.example.com/alerts"
+      headers:
+        Authorization: "Bearer token"
+      retry_attempts: 3
+
+    slack:
+      enabled: false
+      webhook_url: "https://hooks.slack.com/services/YOUR/WEBHOOK/URL"
+      channel: "#security-alerts"
+      severity_filter: [critical, high]
+
+monitoring:
+  # System metrics collection
+  enabled: true
+  interval_seconds: 60
+
+  # Metrics to collect
+  metrics:
+    - cpu_usage
+    - memory_usage
+    - disk_usage
+    - network_throughput
+    - packet_capture_rate
+    - detection_latency
+    - alert_rate
+
+  # Prometheus metrics export
+  prometheus:
+    enabled: true
+    port: 9091
+    path: /metrics
+
+  # Grafana dashboards
+  grafana:
+    enabled: false
+    url: "http://localhost:3000"
+    api_key: "your-api-key"
+
+  # Alerting on system issues
+  system_alerts:
+    enabled: true
+    high_cpu_threshold: 80
+    high_memory_threshold: 85
+    low_disk_space_threshold: 10  # GB
+    component_down_alert: true
+
+logging:
+  # Centralized logging
+  format: json  # json, text
+
+  # Log levels per component
+  levels:
+    nids: info
+    ai_engine: info
+    mcp: info
+    api: info
+
+  # Log aggregation
+  aggregation:
+    enabled: false
+    type: elasticsearch  # elasticsearch, loki, cloudwatch
+    endpoint: "http://localhost:9200"
+    index: hybrid-ids-logs
+
+  # Log rotation
+  rotation:
+    max_size_mb: 100
+    max_files: 10
+    compress: true
+
+security:
+  # TLS/SSL for API
+  tls:
+    enabled: false
+    cert_file: /etc/hybrid-ids/certs/server.crt
+    key_file: /etc/hybrid-ids/certs/server.key
+    ca_file: /etc/hybrid-ids/certs/ca.crt
+
+  # Encrypted IPC
+  encrypted_ipc:
+    enabled: false
+    method: curve  # curve (ZeroMQ encryption)
+    public_key_path: /etc/hybrid-ids/keys/public.key
+    secret_key_path: /etc/hybrid-ids/keys/secret.key
+
+  # Audit logging
+  audit:
+    enabled: true
+    log_file: /var/log/hybrid-ids/audit.log
+    events:
+      - config_change
+      - component_start
+      - component_stop
+      - alert_acknowledge
+      - user_login
+      - api_access
+
+  # Access control
+  rbac:
+    enabled: false
+    roles:
+      admin:
+        permissions:
+          - all
+      analyst:
+        permissions:
+          - view_alerts
+          - acknowledge_alerts
+          - view_metrics
+      viewer:
+        permissions:
+          - view_alerts
+          - view_metrics
+
+orchestration:
+  # Startup sequence
+  startup_order:
+    - nids
+    - ai_engine
+    - api_server
+
+  # Startup delay between components (seconds)
+  startup_delay: 5
+
+  # Graceful shutdown
+  graceful_shutdown:
+    enabled: true
+    timeout_seconds: 30
+    save_state: true
+
+  # Automatic recovery
+  auto_recovery:
+    enabled: true
+    max_recovery_attempts: 3
+    recovery_strategies:
+      - restart_component
+      - reload_config
+      - reset_state
+
+  # Configuration hot-reload
+  hot_reload:
+    enabled: true
+    watch_config_files: true
+    reload_on_change: true
+
+maintenance:
+  # Scheduled tasks
+  tasks:
+    database_cleanup:
+      enabled: true
+      schedule: "0 2 * * *"  # Daily at 2 AM (cron format)
+      retention_days: 90
+
+    model_retraining:
+      enabled: false
+      schedule: "0 3 * * 0"  # Weekly on Sunday at 3 AM
+
+    backup:
+      enabled: true
+      schedule: "0 1 * * *"  # Daily at 1 AM
+
+    log_rotation:
+      enabled: true
+      schedule: "0 0 * * *"  # Daily at midnight
+
+  # System updates
+  updates:
+    check_for_updates: true
+    update_channel: stable  # stable, beta, dev
+    auto_update: false
+
+reporting:
+  # Generate periodic reports
+  enabled: true
+
+  # Report types
+  reports:
+    daily_summary:
+      enabled: true
+      schedule: "0 8 * * *"  # Daily at 8 AM
+      recipients:
+        - security@example.com
+
+    weekly_summary:
+      enabled: true
+      schedule: "0 8 * * 1"  # Monday at 8 AM
+      recipients:
+        - security@example.com
+        - management@example.com
+
+    monthly_summary:
+      enabled: true
+      schedule: "0 8 1 * *"  # 1st of month at 8 AM
+      recipients:
+        - security@example.com
+        - management@example.com
+
+  # Report format
+  format: pdf  # pdf, html, json
+
+  # Report content
+  include:
+    - alert_statistics
+    - top_threats
+    - system_performance
+    - false_positive_rate
+    - detection_accuracy
+
+advanced:
+  # Multi-sensor deployment
+  distributed:
+    enabled: false
+    mode: centralized  # centralized, distributed, hybrid
+    sensors:
+      - id: sensor-1
+        location: datacenter-1
+        endpoint: "tcp://sensor1.example.com:5555"
+      - id: sensor-2
+        location: datacenter-2
+        endpoint: "tcp://sensor2.example.com:5555"
+
+  # High availability
+  ha:
+    enabled: false
+    mode: active-passive  # active-passive, active-active
+    heartbeat_interval: 5
+    failover_timeout: 30
+
+  # Load balancing
+  load_balancing:
+    enabled: false
+    algorithm: round_robin  # round_robin, least_connections, ip_hash
+
+  # Experimental features
+  experimental:
+    ai_assisted_orchestration: false
+    predictive_scaling: false
+    automated_tuning: false

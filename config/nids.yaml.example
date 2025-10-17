@@ -1,0 +1,222 @@
+# ============================================
+# NIDS Engine Configuration
+# ============================================
+
+system:
+  log_level: info  # debug, info, warning, error, critical
+  log_file: /var/log/hybrid-ids/nids.log
+  pid_file: /var/run/hybrid-ids/nids.pid
+
+capture:
+  # Network interface to capture from
+  interface: eth0
+
+  # BPF (Berkeley Packet Filter) expression
+  # Examples:
+  #   "tcp or udp"                  - Capture TCP and UDP traffic
+  #   "host 192.168.1.1"            - Capture traffic from/to specific host
+  #   "port 80 or port 443"         - Capture HTTP and HTTPS traffic
+  #   "not port 22"                 - Exclude SSH traffic
+  capture_filter: "tcp or udp"
+
+  # Snapshot length (bytes) - maximum bytes to capture per packet
+  # 65535 = capture full packet, smaller values = better performance
+  snapshot_length: 65535
+
+  # Timeout for packet capture (milliseconds)
+  timeout_ms: 100
+
+  # Packet buffer size (bytes)
+  # Larger buffer = more memory but fewer drops under high load
+  buffer_size: 268435456  # 256 MB
+
+  # Promiscuous mode (capture all packets on network segment)
+  promiscuous: true
+
+threading:
+  # Number of packet processing threads
+  # Recommended: Number of CPU cores - 1
+  thread_count: 4
+
+  # Queue size for packet processing pipeline
+  queue_size: 10000
+
+  # Worker thread affinity (pin threads to specific CPU cores)
+  enable_affinity: false
+
+parsing:
+  # Maximum depth for protocol decoding
+  max_decode_depth: 5
+
+  # Enable deep packet inspection
+  deep_packet_inspection: true
+
+  # Protocols to decode
+  decode_protocols:
+    - ethernet
+    - ipv4
+    - ipv6
+    - tcp
+    - udp
+    - icmp
+    - http
+    - dns
+    - tls
+    - smtp
+    - ftp
+
+features:
+  # Flow timeout (seconds) - flows inactive for this long are expired
+  flow_timeout: 120
+
+  # Flow export interval (seconds) - how often to send flow data to AI engine
+  export_interval: 1
+
+  # Maximum number of concurrent flows to track
+  max_flows: 100000
+
+  # Feature computation
+  compute_statistical: true
+  compute_behavioral: true
+
+  # Features to extract
+  feature_list:
+    # Basic features
+    - duration
+    - protocol
+    - src_port
+    - dst_port
+    - packet_length
+    - flags
+
+    # Flow features
+    - total_fwd_packets
+    - total_bwd_packets
+    - total_fwd_bytes
+    - total_bwd_bytes
+    - fwd_packet_rate
+    - bwd_packet_rate
+
+    # Inter-arrival times
+    - fwd_iat_mean
+    - fwd_iat_std
+    - fwd_iat_min
+    - fwd_iat_max
+    - bwd_iat_mean
+    - bwd_iat_std
+
+    # Packet length statistics
+    - fwd_pkt_len_mean
+    - fwd_pkt_len_std
+    - bwd_pkt_len_mean
+    - bwd_pkt_len_std
+
+    # TCP flags
+    - syn_count
+    - ack_count
+    - fin_count
+    - rst_count
+    - psh_count
+    - urg_count
+
+rules:
+  # Path to rule files
+  path: /etc/hybrid-ids/rules/
+
+  # Rule file format (yaml or custom)
+  format: yaml
+
+  # Reload interval (seconds) - automatically reload rules
+  # Set to 0 to disable automatic reload
+  reload_interval: 300
+
+  # Enable/disable rule engine
+  enabled: true
+
+  # Default action when rule matches
+  default_action: alert  # alert, log, drop
+
+ipc:
+  # ZeroMQ endpoint for sending data to AI engine
+  endpoint: "tcp://localhost:5555"
+
+  # Socket type: pub (publisher) or push (load balanced)
+  socket_type: pub
+
+  # High water mark (max queued messages)
+  # Messages are dropped if queue is full
+  high_water_mark: 10000
+
+  # Send timeout (milliseconds)
+  send_timeout_ms: 1000
+
+  # Enable compression (reduce network bandwidth)
+  compression: false
+
+  # Batch size (number of packets to batch before sending)
+  # Higher values = better throughput but higher latency
+  batch_size: 10
+
+  # Batch timeout (milliseconds) - send batch even if not full
+  batch_timeout_ms: 100
+
+alerts:
+  # Alert output destinations
+  syslog:
+    enabled: true
+    server: localhost
+    port: 514
+    facility: local0
+
+  file:
+    enabled: true
+    path: /var/log/hybrid-ids/alerts.log
+    format: json  # json or text
+    rotate_size_mb: 100
+    max_files: 10
+
+  # Forward alerts to MCP controller
+  forward_to_mcp: true
+
+performance:
+  # Zero-copy packet processing (requires specific NIC support)
+  zero_copy: false
+
+  # NUMA node affinity (for multi-socket systems)
+  numa_node: 0
+
+  # Prefetch optimization
+  enable_prefetch: true
+
+  # Statistics collection interval (seconds)
+  stats_interval: 60
+
+  # Enable performance profiling
+  profiling: false
+
+limits:
+  # Maximum CPU usage (percentage) - throttle if exceeded
+  max_cpu_percent: 80
+
+  # Maximum memory usage (MB) - restart if exceeded
+  max_memory_mb: 4096
+
+  # Maximum packet processing rate (packets/sec) - throttle if exceeded
+  # 0 = unlimited
+  max_pps: 0
+
+# Advanced options
+advanced:
+  # Custom packet dissectors (shared libraries)
+  custom_dissectors: []
+
+  # DPDK configuration (if compiled with DPDK support)
+  dpdk:
+    enabled: false
+    eal_args: "-l 0-3 -n 4 --proc-type=primary"
+    port: 0
+
+  # Experimental features
+  experimental:
+    ml_assisted_parsing: false
+    adaptive_buffering: false
