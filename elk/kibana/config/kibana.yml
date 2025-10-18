@@ -1,0 +1,18 @@
+# Kibana Configuration for Hybrid IDS
+
+server.host: "0.0.0.0"
+server.port: 5601
+server.name: "hybrid-ids-kibana"
+
+elasticsearch.hosts: ["http://elasticsearch:9200"]
+
+# Logging
+logging.dest: stdout
+logging.quiet: false
+
+# Monitoring
+monitoring.ui.enabled: true
+monitoring.kibana.collection.enabled: false
+
+# Default space
+xpack.spaces.enabled: true
