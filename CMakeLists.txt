@@ -55,25 +55,44 @@ include_directories(
 # Source Files
 # ============================================
 
-# S-IDS (Signature-based IDS) sources
-set(SIDS_SOURCES
+# Common sources (shared between S-IDS and NIDS)
+set(COMMON_SOURCES
     src/nids/common/types.cpp
     src/nids/parser/packet_parser.cpp
+    src/nids/parser/protocol_decoder.cpp
     src/nids/rules/rule_engine.cpp
+    src/nids/features/connection_tracker.cpp
+    src/nids/features/feature_extractor.cpp
+    src/nids/ipc/zmq_publisher.cpp
+)
+
+# S-IDS (Signature-based IDS) sources
+set(SIDS_SOURCES
+    ${COMMON_SOURCES}
     src/nids/sids_main.cpp
 )
 
+# Complete NIDS (Full system) sources
+set(NIDS_SOURCES
+    ${COMMON_SOURCES}
+    src/nids/nids_main.cpp
+)
+
 # Header files (for IDEs)
-set(SIDS_HEADERS
+set(NIDS_HEADERS
     src/nids/common/types.h
     src/nids/parser/packet_parser.h
+    src/nids/parser/protocol_decoder.h
     src/nids/rules/rule_engine.h
+    src/nids/features/connection_tracker.h
+    src/nids/features/feature_extractor.h
+    src/nids/ipc/zmq_publisher.h
 )
 
 # ============================================
 # S-IDS Executable
 # ============================================
-add_executable(sids ${SIDS_SOURCES} ${SIDS_HEADERS})
+add_executable(sids ${SIDS_SOURCES} ${NIDS_HEADERS})
 
 target_link_libraries(sids
     Threads::Threads
@@ -86,14 +105,31 @@ set_target_properties(sids PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 
+# ============================================
+# Complete NIDS Executable
+# ============================================
+add_executable(nids ${NIDS_SOURCES} ${NIDS_HEADERS})
+
+target_link_libraries(nids
+    Threads::Threads
+    ${PCAP_LIBRARIES}
+    pcap
+)
+
+# Set output directory
+set_target_properties(nids PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
+)
+
 if(USE_DPDK)
     target_link_libraries(nids ${DPDK_LIBRARIES})
+    target_link_libraries(sids ${DPDK_LIBRARIES})
 endif()
 
 # ============================================
 # Installation
 # ============================================
-install(TARGETS sids DESTINATION bin)
+install(TARGETS sids nids DESTINATION bin)
 install(DIRECTORY config/ DESTINATION etc/hybrid-ids)
 
 # ============================================
