@@ -103,7 +103,7 @@ Hybrid IDS is an advanced network intrusion detection system that leverages the 
 #### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/yourusername/hybrid-ids-mcp.git
+git clone https://github.com/SyedMisbahGit/hybrid-ids-mcp.git
 cd hybrid-ids-mcp
 ```
 
