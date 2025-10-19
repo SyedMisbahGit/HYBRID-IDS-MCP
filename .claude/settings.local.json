@@ -1,7 +1,12 @@
 {
   "permissions": {
     "allow": [
-      "Bash(wc -l src/nids/**/*.{cpp,h})"
+      "Bash(wc -l src/nids/**/*.{cpp,h})",
+      "Bash(python test_hids.py)",
+      "Bash(python file_monitor.py)",
+      "Bash(python log_analyzer.py)",
+      "Bash(python process_monitor.py)",
+      "Bash(chmod +x scripts/start_nids.sh)"
     ],
     "deny": [],
     "ask": []

@@ -1,0 +1,153 @@
+# ============================================
+# Hybrid IDS - HIDS Configuration
+# ============================================
+
+# General Settings
+hostname: "localhost"
+check_interval: 60  # seconds
+log_check_interval: 300  # seconds (5 minutes)
+
+# Component Toggles
+file_monitoring: true
+process_monitoring: true
+log_monitoring: true
+
+# Elasticsearch Integration
+elasticsearch_enabled: false  # Set to true to enable
+elasticsearch_hosts:
+  - "http://localhost:9200"
+
+# File Integrity Monitoring (FIM)
+file_integrity:
+  baseline_file: "data/hids_baseline.json"
+  hash_algorithm: "sha256"
+
+  # Paths to monitor (Windows)
+  monitored_paths_windows:
+    - "C:\\Windows\\System32"
+    - "C:\\Windows\\SysWOW64"
+    - "C:\\Program Files"
+    - "C:\\Program Files (x86)"
+
+  # Paths to monitor (Linux)
+  monitored_paths_linux:
+    - "/etc"
+    - "/bin"
+    - "/sbin"
+    - "/usr/bin"
+    - "/usr/sbin"
+    - "/lib"
+    - "/boot"
+
+  # File extensions to monitor
+  file_extensions:
+    - ".exe"
+    - ".dll"
+    - ".sys"
+    - ".so"
+    - ".conf"
+    - ".cfg"
+    - ".ini"
+    - ".sh"
+    - ".bat"
+    - ".ps1"
+
+  # Exclude patterns (glob)
+  exclude_patterns:
+    - "*.tmp"
+    - "*.log"
+    - "*.swp"
+    - "*~"
+
+# Process Monitoring
+process_monitoring:
+  baseline_on_start: true
+  cpu_threshold: 80  # percent
+  memory_threshold: 50  # percent
+
+  # Suspicious process patterns
+  suspicious_patterns:
+    - "nc"
+    - "netcat"
+    - "nmap"
+    - "metasploit"
+    - "mimikatz"
+    - "powersploit"
+    - "empire"
+    - "meterpreter"
+    - "keylogger"
+    - "backdoor"
+    - "rootkit"
+    - "ransomware"
+    - "miner"
+    - "xmrig"
+
+  # Suspicious ports
+  suspicious_ports:
+    - 1337
+    - 31337
+    - 4444
+    - 4445
+    - 5555
+    - 6666
+    - 6667
+    - 9999
+    - 10000
+
+# Log Analysis
+log_analysis:
+  # Windows Event Logs
+  windows_event_logs:
+    - "Security"
+    - "System"
+    - "Application"
+
+  # Linux/Unix log files
+  linux_log_paths:
+    - "/var/log/auth.log"
+    - "/var/log/syslog"
+    - "/var/log/secure"
+    - "/var/log/messages"
+
+  # Failed login threshold for brute force detection
+  brute_force_threshold: 3
+
+  # Detection rules enabled
+  rules:
+    - "failed_login"
+    - "successful_login_after_failures"
+    - "privilege_escalation"
+    - "service_change"
+    - "firewall_change"
+    - "account_management"
+    - "suspicious_commands"
+    - "system_change"
+
+# Alert Output
+alerts:
+  log_file: "logs/hids_alerts.log"
+  json_format: true
+
+  # Severity levels to log
+  min_severity: "LOW"  # LOW, MEDIUM, HIGH, CRITICAL
+
+  # Alert retention (days)
+  retention_days: 30
+
+# Performance Tuning
+performance:
+  # Maximum files to scan per cycle
+  max_files_per_scan: 10000
+
+  # Maximum processes to scan
+  max_processes: 1000
+
+  # Thread pool size
+  worker_threads: 2
+
+# Logging
+logging:
+  level: "INFO"  # DEBUG, INFO, WARNING, ERROR, CRITICAL
+  file: "logs/hids.log"
+  max_size_mb: 100
+  backup_count: 5

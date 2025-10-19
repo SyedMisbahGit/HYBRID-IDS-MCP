@@ -1,0 +1,337 @@
+# ============================================
+# Hybrid IDS - NIDS Configuration
+# Network-based Intrusion Detection System
+# ============================================
+
+system:
+  log_level: info  # debug, info, warning, error, critical
+  log_file: logs/nids.log
+  pid_file: data/nids.pid
+
+capture:
+  # Network interface to capture from
+  # Windows: "Ethernet", "Wi-Fi", "Local Area Connection"
+  # Linux: "eth0", "ens33", "wlan0"
+  interface: "Ethernet"
+
+  # BPF (Berkeley Packet Filter) expression
+  # Examples:
+  #   "tcp or udp"                  - Capture TCP and UDP traffic
+  #   "host 192.168.1.1"            - Capture traffic from/to specific host
+  #   "port 80 or port 443"         - Capture HTTP and HTTPS traffic
+  #   "not port 22"                 - Exclude SSH traffic
+  capture_filter: "tcp or udp"
+
+  # Snapshot length (bytes) - maximum bytes to capture per packet
+  # 65535 = capture full packet (required for deep inspection)
+  # 1514 = capture headers only (better performance)
+  snapshot_length: 65535
+
+  # Timeout for packet capture (milliseconds)
+  timeout_ms: 100
+
+  # Packet buffer size (bytes)
+  # Larger buffer = more memory but fewer drops under high load
+  buffer_size: 268435456  # 256 MB
+
+  # Promiscuous mode (capture all packets on network segment)
+  # true = monitor all traffic, false = only traffic to/from this machine
+  promiscuous: true
+
+threading:
+  # Number of packet processing threads
+  # Recommended: Number of CPU cores - 1 (leave 1 core for OS)
+  thread_count: 3
+
+  # Queue size for packet processing pipeline
+  queue_size: 10000
+
+  # Worker thread affinity (pin threads to specific CPU cores)
+  # Improves cache locality but may reduce flexibility
+  enable_affinity: false
+
+parsing:
+  # Maximum depth for protocol decoding
+  # Higher = more protocols decoded, but slower
+  max_decode_depth: 5
+
+  # Enable deep packet inspection (DPI)
+  # Inspects application-layer data for threats
+  deep_packet_inspection: true
+
+  # Protocols to decode
+  decode_protocols:
+    - ethernet
+    - ipv4
+    - ipv6
+    - tcp
+    - udp
+    - icmp
+    - http
+    - https
+    - dns
+    - tls
+    - smtp
+    - ftp
+    - ssh
+
+features:
+  # Flow timeout (seconds) - flows inactive for this long are expired
+  flow_timeout: 120
+
+  # Flow export interval (seconds) - how often to send flow data to AI engine
+  export_interval: 1
+
+  # Maximum number of concurrent flows to track
+  # Adjust based on network size and available memory
+  max_flows: 100000
+
+  # Feature computation flags
+  compute_statistical: true  # Statistical features (mean, std, etc.)
+  compute_behavioral: true   # Behavioral features (patterns over time)
+
+  # CIC-IDS2017 compatible features (78 features total)
+  feature_list:
+    # Basic features
+    - duration
+    - protocol
+    - src_port
+    - dst_port
+    - packet_length
+    - flags
+
+    # Forward/Backward flow features
+    - total_fwd_packets
+    - total_bwd_packets
+    - total_fwd_bytes
+    - total_bwd_bytes
+    - fwd_packet_rate
+    - bwd_packet_rate
+    - flow_bytes_per_sec
+    - flow_packets_per_sec
+
+    # Inter-arrival times (IAT)
+    - fwd_iat_mean
+    - fwd_iat_std
+    - fwd_iat_min
+    - fwd_iat_max
+    - bwd_iat_mean
+    - bwd_iat_std
+    - bwd_iat_min
+    - bwd_iat_max
+    - flow_iat_mean
+    - flow_iat_std
+    - flow_iat_min
+    - flow_iat_max
+
+    # Packet length statistics
+    - fwd_pkt_len_mean
+    - fwd_pkt_len_std
+    - fwd_pkt_len_min
+    - fwd_pkt_len_max
+    - bwd_pkt_len_mean
+    - bwd_pkt_len_std
+    - bwd_pkt_len_min
+    - bwd_pkt_len_max
+
+    # TCP flags (for TCP flows only)
+    - syn_flag_count
+    - ack_flag_count
+    - fin_flag_count
+    - rst_flag_count
+    - psh_flag_count
+    - urg_flag_count
+    - ece_flag_count
+    - cwr_flag_count
+
+    # Header lengths
+    - fwd_header_length
+    - bwd_header_length
+
+    # Bulk transfer
+    - fwd_bulk_rate
+    - bwd_bulk_rate
+    - fwd_bulk_size
+    - bwd_bulk_size
+
+    # Subflow features
+    - fwd_subflow_packets
+    - bwd_subflow_packets
+    - fwd_subflow_bytes
+    - bwd_subflow_bytes
+
+    # Active/Idle times
+    - active_mean
+    - active_std
+    - active_min
+    - active_max
+    - idle_mean
+    - idle_std
+    - idle_min
+    - idle_max
+
+rules:
+  # Path to rule files (S-IDS signature-based detection)
+  path: config/nids/rules/
+
+  # Rule file format
+  format: yaml
+
+  # Reload interval (seconds) - automatically reload rules
+  # Set to 0 to disable automatic reload
+  reload_interval: 300
+
+  # Enable/disable rule engine (S-IDS)
+  enabled: true
+
+  # Default action when rule matches
+  default_action: alert  # alert, log, drop
+
+  # Performance tuning
+  max_rules: 10000
+  rule_cache_size: 1000
+
+ipc:
+  # ZeroMQ endpoint for sending features to AI engine (A-IDS)
+  endpoint: "tcp://localhost:5555"
+
+  # Socket type: pub (publisher) or push (load balanced)
+  socket_type: pub
+
+  # High water mark (max queued messages)
+  # Messages are dropped if queue is full
+  high_water_mark: 10000
+
+  # Send timeout (milliseconds)
+  send_timeout_ms: 1000
+
+  # Enable compression (reduce network bandwidth)
+  compression: false
+
+  # Batch size (number of flows to batch before sending)
+  # Higher values = better throughput but higher latency
+  batch_size: 10
+
+  # Batch timeout (milliseconds) - send batch even if not full
+  batch_timeout_ms: 100
+
+alerts:
+  # Alert output destinations
+  file:
+    enabled: true
+    path: logs/nids_alerts.log
+    format: json  # json or text
+    rotate_size_mb: 100
+    max_files: 10
+
+  # Console output
+  console:
+    enabled: true
+    format: text
+    min_severity: HIGH  # LOW, MEDIUM, HIGH, CRITICAL
+
+  # Forward alerts to Elasticsearch (via exporter)
+  elasticsearch:
+    enabled: false  # Set to true if using ELK stack
+    index_prefix: "hybrid-ids-nids"
+
+performance:
+  # Zero-copy packet processing (requires specific NIC support)
+  zero_copy: false
+
+  # NUMA node affinity (for multi-socket systems)
+  # -1 = automatic, 0+ = specific node
+  numa_node: -1
+
+  # Prefetch optimization
+  enable_prefetch: true
+
+  # Statistics collection interval (seconds)
+  stats_interval: 60
+
+  # Enable performance profiling
+  profiling: false
+
+limits:
+  # Maximum CPU usage (percentage) - throttle if exceeded
+  max_cpu_percent: 80
+
+  # Maximum memory usage (MB) - restart if exceeded
+  max_memory_mb: 4096
+
+  # Maximum packet processing rate (packets/sec)
+  # 0 = unlimited
+  max_pps: 0
+
+  # Maximum alert rate (alerts/sec) - prevent alert flooding
+  max_alerts_per_sec: 1000
+
+# S-IDS specific settings
+sids:
+  # Signature-based detection
+  enabled: true
+
+  # Pattern matching engine
+  # Options: pcre (regex), aho-corasick (fast string matching), hyperscan (Intel)
+  pattern_engine: pcre
+
+  # Parallel rule evaluation
+  parallel_matching: true
+
+  # Rule priority levels
+  priorities:
+    - CRITICAL
+    - HIGH
+    - MEDIUM
+    - LOW
+    - INFO
+
+# A-IDS specific settings (ML-based anomaly detection)
+aids:
+  # Anomaly detection via AI engine
+  enabled: true
+
+  # Send all flows to AI engine
+  send_all_flows: false  # false = only send flows not matched by S-IDS
+
+  # Feature extraction mode
+  # Options: full (78 features), basic (20 features), minimal (10 features)
+  feature_mode: full
+
+  # Confidence threshold for anomaly alerts
+  # Flows with confidence >= threshold are alerted
+  confidence_threshold: 0.85
+
+# Advanced options
+advanced:
+  # Custom packet dissectors (shared libraries)
+  custom_dissectors: []
+
+  # DPDK configuration (if compiled with DPDK support)
+  dpdk:
+    enabled: false
+    eal_args: "-l 0-3 -n 4 --proc-type=primary"
+    port: 0
+
+  # Experimental features
+  experimental:
+    ml_assisted_parsing: false
+    adaptive_buffering: false
+    gpu_acceleration: false
+
+# Debugging
+debug:
+  # Dump packets to pcap file
+  dump_packets: false
+  dump_file: logs/nids_dump.pcap
+  dump_max_size_mb: 1000
+
+  # Verbose logging for specific components
+  verbose_components: []
+    # - parser
+    # - features
+    # - rules
+    # - ipc
+
+  # Memory leak detection
+  check_memory_leaks: false

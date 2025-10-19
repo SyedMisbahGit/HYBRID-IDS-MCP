@@ -112,3 +112,12 @@ tqdm>=4.65.0  # Progress bars
 click>=8.1.0  # CLI framework
 tabulate>=0.9.0  # Pretty print tables
 colorama>=0.4.6  # Colored terminal output
+
+# ============================================
+# HIDS-Specific Dependencies
+# ============================================
+watchdog>=3.0.0  # File system monitoring
+elasticsearch>=8.9.0  # Elasticsearch integration
+pywin32>=306  # Windows Event Log (Windows only)
+# Note: pywin32 is only needed on Windows for Event Log analysis
+# Linux users can skip this dependency

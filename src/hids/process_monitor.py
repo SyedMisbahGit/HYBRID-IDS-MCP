@@ -256,13 +256,13 @@ class ProcessMonitor:
             9999, 10000  # Common backdoor ports
         ]
 
+        # Check suspicious listening ports
+        if conn.status == 'LISTEN' and conn.laddr.port in suspicious_ports:
+            return True
+
         if conn.raddr:
             # Check remote port
             if conn.raddr.port in suspicious_ports:
-                return True
-
-            # Check local port (listening)
-            if conn.status == 'LISTEN' and conn.laddr.port in suspicious_ports:
                 return True
 
         # Suspicious processes making connections

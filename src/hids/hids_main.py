@@ -249,14 +249,19 @@ class HybridHIDS:
 
     def _print_stats(self):
         """Print monitoring statistics"""
-        uptime = time.time() - self.stats['start_time']
-        hours = int(uptime // 3600)
-        minutes = int((uptime % 3600) // 60)
-
         print("\n" + "="*60)
         print("  HIDS Statistics")
         print("="*60)
-        print(f"Uptime:             {hours}h {minutes}m")
+
+        # Calculate uptime if monitoring has started
+        if self.stats['start_time'] is not None:
+            uptime = time.time() - self.stats['start_time']
+            hours = int(uptime // 3600)
+            minutes = int((uptime % 3600) // 60)
+            print(f"Uptime:             {hours}h {minutes}m")
+        else:
+            print(f"Uptime:             Not started")
+
         print(f"Total Alerts:       {self.stats['total_alerts']}")
         print(f"  File Alerts:      {self.stats['file_alerts']}")
         print(f"  Process Alerts:   {self.stats['process_alerts']}")
@@ -284,12 +289,6 @@ class HybridHIDS:
         self.process_monitor.print_stats()
 
         logger.info("[INFO] HIDS stopped")
-
-
-def signal_handler(signum, frame):
-    """Handle shutdown signals"""
-    logger.info(f"\n[SIGNAL] Received signal {signum}")
-    sys.exit(0)
 
 
 def main():
@@ -329,7 +328,14 @@ def main():
     # Initialize HIDS
     hids = HybridHIDS(config)
 
-    # Setup signal handlers
+    # Setup signal handlers for graceful shutdown
+    def signal_handler(signum, frame):
+        """Handle shutdown signals"""
+        logger.info(f"\n[SIGNAL] Received signal {signum}, shutting down...")
+        hids.running = False
+        # Allow cleanup to happen in finally block
+        raise KeyboardInterrupt
+
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
 
@@ -337,6 +343,8 @@ def main():
         # Initialize and run
         hids.initialize()
         hids.run()
+    except KeyboardInterrupt:
+        logger.info("\n[INFO] Interrupted by user")
     except Exception as e:
         logger.error(f"HIDS error: {e}")
         import traceback

@@ -119,12 +119,33 @@ class FileIntegrityMonitor:
         hasher = hashlib.new(algorithm)
 
         try:
+            # Skip symbolic links and reparse points on Windows
+            if os.path.islink(filepath):
+                logger.debug(f"Skipping symbolic link: {filepath}")
+                return None
+
+            # Check if file is a reparse point (Windows junction/symlink)
+            if platform.system() == 'Windows':
+                import stat
+                try:
+                    file_stat = os.lstat(filepath)
+                    # Check for reparse point attribute
+                    if file_stat.st_file_attributes & stat.FILE_ATTRIBUTE_REPARSE_POINT:
+                        logger.debug(f"Skipping reparse point: {filepath}")
+                        return None
+                except (AttributeError, OSError):
+                    pass
+
             with open(filepath, 'rb') as f:
                 while chunk := f.read(8192):
                     hasher.update(chunk)
             return hasher.hexdigest()
+        except (PermissionError, OSError, IOError) as e:
+            # Common errors for system files, just skip silently
+            logger.debug(f"Cannot access {filepath}: {e}")
+            return None
         except Exception as e:
-            logger.error(f"Failed to hash {filepath}: {e}")
+            logger.warning(f"Failed to hash {filepath}: {e}")
             return None
 
     def get_file_metadata(self, filepath: str) -> Dict:
@@ -155,6 +176,14 @@ class FileIntegrityMonitor:
         """Create baseline of monitored files"""
         logger.info("Creating file integrity baseline...")
 
+        # Directories to skip on Windows (contain problematic reparse points)
+        skip_dirs = set()
+        if platform.system() == 'Windows':
+            skip_dirs = {
+                'WindowsApps', 'WinSxS', '$Recycle.Bin', 'System Volume Information',
+                'AppData\\Local\\Microsoft\\WindowsApps'
+            }
+
         for path in self.config['monitored_paths']:
             if not os.path.exists(path):
                 logger.warning(f"Path does not exist: {path}")
@@ -165,7 +194,10 @@ class FileIntegrityMonitor:
             if os.path.isfile(path):
                 self._add_to_baseline(path)
             elif os.path.isdir(path):
-                for root, dirs, files in os.walk(path):
+                for root, dirs, files in os.walk(path, topdown=True):
+                    # Skip problematic directories
+                    dirs[:] = [d for d in dirs if d not in skip_dirs and not d.startswith('.')]
+
                     for filename in files:
                         filepath = os.path.join(root, filename)
                         self._add_to_baseline(filepath)
@@ -198,6 +230,14 @@ class FileIntegrityMonitor:
         """Check files against baseline"""
         logger.info("Checking file integrity...")
 
+        # Directories to skip on Windows (contain problematic reparse points)
+        skip_dirs = set()
+        if platform.system() == 'Windows':
+            skip_dirs = {
+                'WindowsApps', 'WinSxS', '$Recycle.Bin', 'System Volume Information',
+                'AppData\\Local\\Microsoft\\WindowsApps'
+            }
+
         current_files = set()
         changes_found = False
 
@@ -208,7 +248,10 @@ class FileIntegrityMonitor:
             if os.path.isfile(path):
                 self._check_file(path, current_files)
             elif os.path.isdir(path):
-                for root, dirs, files in os.walk(path):
+                for root, dirs, files in os.walk(path, topdown=True):
+                    # Skip problematic directories
+                    dirs[:] = [d for d in dirs if d not in skip_dirs and not d.startswith('.')]
+
                     for filename in files:
                         filepath = os.path.join(root, filename)
                         self._check_file(filepath, current_files)

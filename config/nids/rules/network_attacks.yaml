@@ -1,0 +1,335 @@
+# ============================================
+# Network Attack Detection Rules
+# Port scans, DDoS, and network-level attacks
+# ============================================
+
+rules:
+  # Port Scanning Detection
+  - id: 2001
+    name: "TCP SYN Scan Detected"
+    description: "Detects TCP SYN port scanning activity"
+    severity: MEDIUM
+    category: reconnaissance
+    protocol: TCP
+    flags: SYN
+    threshold:
+      type: both  # threshold for same src and dst
+      track: by_src
+      count: 20  # 20 SYN packets
+      seconds: 10  # within 10 seconds
+      to_different_ports: true
+    action: alert
+    metadata:
+      mitre_attack: "T1046"  # Network Service Scanning
+
+  - id: 2002
+    name: "TCP Connect Scan Detected"
+    description: "Detects TCP connect scanning"
+    severity: MEDIUM
+    category: reconnaissance
+    protocol: TCP
+    flags: SYN
+    threshold:
+      type: both
+      track: by_src
+      count: 15
+      seconds: 30
+      to_different_ports: true
+    action: alert
+    metadata:
+      mitre_attack: "T1046"
+
+  - id: 2003
+    name: "UDP Port Scan Detected"
+    description: "Detects UDP port scanning"
+    severity: MEDIUM
+    category: reconnaissance
+    protocol: UDP
+    threshold:
+      type: both
+      track: by_src
+      count: 20
+      seconds: 10
+      to_different_ports: true
+    action: alert
+    metadata:
+      mitre_attack: "T1046"
+
+  - id: 2004
+    name: "ICMP Sweep Detected"
+    description: "Detects ICMP echo request sweep (ping scan)"
+    severity: LOW
+    category: reconnaissance
+    protocol: ICMP
+    icmp_type: 8  # Echo Request
+    threshold:
+      type: both
+      track: by_src
+      count: 10
+      seconds: 5
+      to_different_hosts: true
+    action: alert
+    metadata:
+      mitre_attack: "T1018"  # Remote System Discovery
+
+  # DDoS Attacks
+  - id: 2005
+    name: "SYN Flood Attack"
+    description: "Detects TCP SYN flood DDoS attack"
+    severity: CRITICAL
+    category: dos
+    protocol: TCP
+    flags: SYN
+    threshold:
+      type: threshold
+      track: by_dst
+      count: 100  # 100 SYN packets
+      seconds: 1  # per second
+    action: alert
+    metadata:
+      mitre_attack: "T1498.001"  # Direct Network Flood
+
+  - id: 2006
+    name: "UDP Flood Attack"
+    description: "Detects UDP flood DDoS attack"
+    severity: CRITICAL
+    category: dos
+    protocol: UDP
+    threshold:
+      type: threshold
+      track: by_dst
+      count: 200
+      seconds: 1
+    action: alert
+    metadata:
+      mitre_attack: "T1498.001"
+
+  - id: 2007
+    name: "ICMP Flood Attack"
+    description: "Detects ICMP flood DDoS attack"
+    severity: HIGH
+    category: dos
+    protocol: ICMP
+    threshold:
+      type: threshold
+      track: by_dst
+      count: 100
+      seconds: 1
+    action: alert
+    metadata:
+      mitre_attack: "T1498.001"
+
+  - id: 2008
+    name: "HTTP GET Flood"
+    description: "Detects HTTP GET flood attack"
+    severity: HIGH
+    category: dos
+    protocol: TCP
+    port: [80, 443, 8080]
+    http_method: GET
+    threshold:
+      type: threshold
+      track: by_dst
+      count: 50
+      seconds: 1
+    action: alert
+    metadata:
+      mitre_attack: "T1499"  # Endpoint DoS
+
+  # ARP Attacks
+  - id: 2009
+    name: "ARP Spoofing Detected"
+    description: "Detects ARP spoofing/poisoning attempts"
+    severity: HIGH
+    category: mitm
+    protocol: ARP
+    opcode: reply
+    threshold:
+      type: threshold
+      track: by_src_mac
+      count: 10
+      seconds: 5
+      conflicting_ip_mac: true
+    action: alert
+    metadata:
+      mitre_attack: "T1557.002"  # ARP Cache Poisoning
+
+  # DNS Attacks
+  - id: 2010
+    name: "DNS Tunneling Detected"
+    description: "Detects DNS tunneling for data exfiltration"
+    severity: HIGH
+    category: exfiltration
+    protocol: UDP
+    port: 53
+    dns_query_length_min: 100  # Unusually long DNS queries
+    threshold:
+      type: threshold
+      track: by_src
+      count: 10
+      seconds: 60
+    action: alert
+    metadata:
+      mitre_attack: "T1048.003"  # Exfiltration Over Unencrypted/Obfuscated Channel
+
+  - id: 2011
+    name: "DNS Amplification Attack"
+    description: "Detects DNS amplification DDoS"
+    severity: CRITICAL
+    category: dos
+    protocol: UDP
+    port: 53
+    dns_response_size_min: 512  # Large DNS responses
+    threshold:
+      type: threshold
+      track: by_dst
+      count: 50
+      seconds: 5
+    action: alert
+    metadata:
+      mitre_attack: "T1498.002"  # Reflection Amplification
+
+  # Brute Force Attacks
+  - id: 2012
+    name: "SSH Brute Force Attack"
+    description: "Detects SSH brute force attempts"
+    severity: HIGH
+    category: credential_access
+    protocol: TCP
+    port: 22
+    threshold:
+      type: both
+      track: by_src
+      count: 5  # 5 failed attempts
+      seconds: 60  # within 1 minute
+    action: alert
+    metadata:
+      mitre_attack: "T1110"  # Brute Force
+
+  - id: 2013
+    name: "RDP Brute Force Attack"
+    description: "Detects RDP brute force attempts"
+    severity: HIGH
+    category: credential_access
+    protocol: TCP
+    port: 3389
+    threshold:
+      type: both
+      track: by_src
+      count: 5
+      seconds: 60
+    action: alert
+    metadata:
+      mitre_attack: "T1110"
+
+  - id: 2014
+    name: "FTP Brute Force Attack"
+    description: "Detects FTP brute force attempts"
+    severity: MEDIUM
+    category: credential_access
+    protocol: TCP
+    port: 21
+    threshold:
+      type: both
+      track: by_src
+      count: 5
+      seconds: 60
+    action: alert
+    metadata:
+      mitre_attack: "T1110"
+
+  # Malicious Traffic
+  - id: 2015
+    name: "Suspicious Outbound Connection"
+    description: "Detects connection to known malicious ports"
+    severity: HIGH
+    category: command_and_control
+    protocol: TCP
+    direction: outbound
+    port: [1337, 31337, 4444, 4445, 6666, 6667]  # Common backdoor ports
+    action: alert
+    metadata:
+      mitre_attack: "T1071"  # Application Layer Protocol
+
+  - id: 2016
+    name: "IRC Traffic Detected"
+    description: "Detects IRC traffic (potential botnet C2)"
+    severity: MEDIUM
+    category: command_and_control
+    protocol: TCP
+    port: [6666, 6667, 6668, 6669, 7000]
+    patterns:
+      - content: "NICK "
+        nocase: false
+      - content: "USER "
+        nocase: false
+      - content: "JOIN #"
+        nocase: false
+    action: alert
+    metadata:
+      mitre_attack: "T1071.001"  # Web Protocols (IRC for C2)
+
+  # SMB Attacks
+  - id: 2017
+    name: "SMB Brute Force"
+    description: "Detects SMB/CIFS brute force"
+    severity: HIGH
+    category: credential_access
+    protocol: TCP
+    port: [139, 445]
+    threshold:
+      type: both
+      track: by_src
+      count: 5
+      seconds: 60
+    action: alert
+    metadata:
+      mitre_attack: "T1110"
+
+  - id: 2018
+    name: "EternalBlue Exploit Attempt (MS17-010)"
+    description: "Detects EternalBlue SMB exploit"
+    severity: CRITICAL
+    category: exploitation
+    protocol: TCP
+    port: [139, 445]
+    patterns:
+      - content: "\\x00\\x00\\x00\\x31\\xff\\x53\\x4d\\x42"
+        nocase: false
+    action: alert
+    metadata:
+      mitre_attack: "T1210"  # Exploitation of Remote Services
+      cve: ["CVE-2017-0144"]
+
+  # Shellcode Detection
+  - id: 2019
+    name: "Shellcode Detected in Traffic"
+    description: "Detects common shellcode patterns"
+    severity: CRITICAL
+    category: exploitation
+    protocol: TCP
+    patterns:
+      - content: "\\x90\\x90\\x90\\x90"  # NOP sled
+        nocase: false
+      - content: "\\x31\\xc0\\x50\\x68"  # Common x86 shellcode
+        nocase: false
+      - content: "/bin/sh"
+        nocase: false
+    action: alert
+    metadata:
+      mitre_attack: "T1059"
+
+  # Lateral Movement
+  - id: 2020
+    name: "PSExec Lateral Movement"
+    description: "Detects PSExec usage for lateral movement"
+    severity: HIGH
+    category: lateral_movement
+    protocol: TCP
+    port: 445
+    patterns:
+      - content: "PSEXESVC"
+        nocase: true
+    action: alert
+    metadata:
+      mitre_attack: "T1021.002"  # SMB/Windows Admin Shares

@@ -1,0 +1,231 @@
+# ============================================
+# Web Attack Detection Rules
+# Signature-based detection for common web attacks
+# ============================================
+
+rules:
+  # SQL Injection Detection
+  - id: 1001
+    name: "SQL Injection Attempt"
+    description: "Detects SQL injection patterns in HTTP requests"
+    severity: CRITICAL
+    category: web_attack
+    protocol: TCP
+    port: [80, 443, 8080, 8443]
+    direction: any
+    patterns:
+      - content: "' OR '1'='1"
+        nocase: true
+      - content: "' OR 1=1"
+        nocase: true
+      - content: "UNION SELECT"
+        nocase: true
+      - content: "'; DROP TABLE"
+        nocase: true
+      - content: "'; DELETE FROM"
+        nocase: true
+      - content: "SELECT * FROM"
+        nocase: true
+    action: alert
+    metadata:
+      mitre_attack: "T1190"  # Exploit Public-Facing Application
+      cve: ["CVE-2021-44228"]  # Example references
+
+  # Cross-Site Scripting (XSS)
+  - id: 1002
+    name: "Cross-Site Scripting (XSS) Attempt"
+    description: "Detects XSS attack patterns"
+    severity: HIGH
+    category: web_attack
+    protocol: TCP
+    port: [80, 443, 8080, 8443]
+    direction: any
+    patterns:
+      - content: "<script>"
+        nocase: true
+      - content: "javascript:"
+        nocase: true
+      - content: "onerror="
+        nocase: true
+      - content: "onload="
+        nocase: true
+      - content: "<iframe"
+        nocase: true
+    action: alert
+    metadata:
+      mitre_attack: "T1059.007"  # JavaScript
+
+  # Command Injection
+  - id: 1003
+    name: "Command Injection Attempt"
+    description: "Detects OS command injection patterns"
+    severity: CRITICAL
+    category: web_attack
+    protocol: TCP
+    port: [80, 443, 8080, 8443]
+    direction: any
+    patterns:
+      - content: "; cat /etc/passwd"
+        nocase: false
+      - content: "| cat /etc/passwd"
+        nocase: false
+      - content: "&& cat /etc/passwd"
+        nocase: false
+      - content: "; ls -la"
+        nocase: false
+      - content: "; whoami"
+        nocase: false
+      - content: "; nc -"
+        nocase: false
+    action: alert
+    metadata:
+      mitre_attack: "T1059"  # Command and Scripting Interpreter
+
+  # Path Traversal
+  - id: 1004
+    name: "Path Traversal Attempt"
+    description: "Detects directory traversal attack patterns"
+    severity: HIGH
+    category: web_attack
+    protocol: TCP
+    port: [80, 443, 8080, 8443]
+    direction: any
+    patterns:
+      - content: "../../../"
+        nocase: false
+      - content: "..\\..\\..\\
+
+"
+        nocase: false
+      - content: "%2e%2e%2f"
+        nocase: true
+      - content: "%2e%2e%5c"
+        nocase: true
+      - content: "....//..../"
+        nocase: false
+    action: alert
+    metadata:
+      mitre_attack: "T1083"  # File and Directory Discovery
+
+  # Local File Inclusion (LFI)
+  - id: 1005
+    name: "Local File Inclusion (LFI) Attempt"
+    description: "Detects LFI attack patterns"
+    severity: HIGH
+    category: web_attack
+    protocol: TCP
+    port: [80, 443, 8080, 8443]
+    direction: any
+    patterns:
+      - content: "file=/etc/passwd"
+        nocase: false
+      - content: "file=../../../etc/passwd"
+        nocase: false
+      - content: "page=/etc/passwd"
+        nocase: false
+      - content: "include=/etc/passwd"
+        nocase: false
+    action: alert
+    metadata:
+      mitre_attack: "T1005"  # Data from Local System
+
+  # Remote File Inclusion (RFI)
+  - id: 1006
+    name: "Remote File Inclusion (RFI) Attempt"
+    description: "Detects RFI attack patterns"
+    severity: CRITICAL
+    category: web_attack
+    protocol: TCP
+    port: [80, 443, 8080, 8443]
+    direction: any
+    patterns:
+      - content: "file=http://"
+        nocase: true
+      - content: "page=http://"
+        nocase: true
+      - content: "include=http://"
+        nocase: true
+      - content: "file=https://"
+        nocase: true
+    action: alert
+    metadata:
+      mitre_attack: "T1105"  # Ingress Tool Transfer
+
+  # Server-Side Template Injection (SSTI)
+  - id: 1007
+    name: "Server-Side Template Injection (SSTI)"
+    description: "Detects SSTI attack patterns"
+    severity: HIGH
+    category: web_attack
+    protocol: TCP
+    port: [80, 443, 8080, 8443]
+    direction: any
+    patterns:
+      - content: "{{7*7}}"
+        nocase: false
+      - content: "${7*7}"
+        nocase: false
+      - content: "{{config}}"
+        nocase: false
+      - content: "{{request}}"
+        nocase: false
+    action: alert
+    metadata:
+      mitre_attack: "T1190"
+
+  # XML External Entity (XXE)
+  - id: 1008
+    name: "XML External Entity (XXE) Attack"
+    description: "Detects XXE attack patterns"
+    severity: HIGH
+    category: web_attack
+    protocol: TCP
+    port: [80, 443, 8080, 8443]
+    direction: any
+    patterns:
+      - content: "<!ENTITY"
+        nocase: true
+      - content: "SYSTEM \"file:///"
+        nocase: true
+      - content: "<!DOCTYPE"
+        nocase: true
+    action: alert
+    metadata:
+      mitre_attack: "T1059.009"  # Cloud API
+
+  # HTTP Method Tampering
+  - id: 1009
+    name: "HTTP Method Tampering"
+    description: "Detects unusual HTTP methods"
+    severity: MEDIUM
+    category: web_attack
+    protocol: TCP
+    port: [80, 443, 8080, 8443]
+    direction: any
+    http_method: [TRACE, TRACK, DEBUG, CONNECT]
+    action: alert
+    metadata:
+      mitre_attack: "T1190"
+
+  # Log4Shell (CVE-2021-44228)
+  - id: 1010
+    name: "Log4Shell Exploitation Attempt"
+    description: "Detects Log4j JNDI injection attempts"
+    severity: CRITICAL
+    category: web_attack
+    protocol: TCP
+    port: any
+    direction: any
+    patterns:
+      - content: "${jndi:ldap://"
+        nocase: false
+      - content: "${jndi:rmi://"
+        nocase: false
+      - content: "${jndi:dns://"
+        nocase: false
+      - content: "${jndi:nis://"
+        nocase: false
+    action: alert
+    metadata:
+      mitre_attack: "T1190"
+      cve: ["CVE-2021-44228", "CVE-2021-45046", "CVE-2021-45105"]

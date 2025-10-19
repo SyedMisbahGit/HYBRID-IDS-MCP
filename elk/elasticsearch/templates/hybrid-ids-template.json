@@ -1,0 +1,163 @@
+{
+  "index_patterns": ["hybrid-ids-*"],
+  "priority": 500,
+  "template": {
+    "settings": {
+      "number_of_shards": 2,
+      "number_of_replicas": 1,
+      "index.refresh_interval": "10s",
+      "index.codec": "best_compression",
+      "analysis": {
+        "analyzer": {
+          "security_analyzer": {
+            "type": "custom",
+            "tokenizer": "standard",
+            "filter": ["lowercase", "stop", "snowball"]
+          }
+        }
+      }
+    },
+    "mappings": {
+      "dynamic": "true",
+      "properties": {
+        "@timestamp": {
+          "type": "date",
+          "format": "strict_date_optional_time||epoch_millis"
+        },
+        "timestamp": {
+          "type": "date",
+          "format": "strict_date_optional_time||epoch_millis"
+        },
+        "alertId": {
+          "type": "keyword"
+        },
+        "source": {
+          "type": "keyword"
+        },
+        "ids_type": {
+          "type": "keyword"
+        },
+        "ids_category": {
+          "type": "keyword"
+        },
+        "ids_subcategory": {
+          "type": "keyword"
+        },
+        "severity": {
+          "type": "keyword"
+        },
+        "severity_num": {
+          "type": "integer"
+        },
+        "title": {
+          "type": "text",
+          "analyzer": "security_analyzer",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 256
+            }
+          }
+        },
+        "description": {
+          "type": "text",
+          "analyzer": "security_analyzer"
+        },
+        "alertAge": {
+          "type": "long"
+        },
+        "alert_age_minutes": {
+          "type": "long"
+        },
+        "mitre_technique": {
+          "type": "keyword"
+        },
+        "mitre_tactic": {
+          "type": "keyword"
+        },
+        "metadata": {
+          "type": "object",
+          "properties": {
+            "src_ip": {
+              "type": "ip"
+            },
+            "dst_ip": {
+              "type": "ip"
+            },
+            "src_port": {
+              "type": "integer"
+            },
+            "dst_port": {
+              "type": "integer"
+            },
+            "protocol": {
+              "type": "keyword"
+            },
+            "hostname": {
+              "type": "keyword"
+            },
+            "component": {
+              "type": "keyword"
+            },
+            "rule_id": {
+              "type": "keyword"
+            },
+            "confidence": {
+              "type": "float"
+            },
+            "correlation_rule_id": {
+              "type": "keyword"
+            },
+            "trigger_alert_id": {
+              "type": "keyword"
+            },
+            "related_alert_count": {
+              "type": "integer"
+            },
+            "related_alert_ids": {
+              "type": "keyword"
+            },
+            "time_window_seconds": {
+              "type": "integer"
+            },
+            "ip_addresses": {
+              "type": "ip"
+            },
+            "geoip_src": {
+              "properties": {
+                "city_name": {
+                  "type": "keyword"
+                },
+                "country_name": {
+                  "type": "keyword"
+                },
+                "country_code2": {
+                  "type": "keyword"
+                },
+                "location": {
+                  "type": "geo_point"
+                }
+              }
+            },
+            "geoip_dst": {
+              "properties": {
+                "city_name": {
+                  "type": "keyword"
+                },
+                "country_name": {
+                  "type": "keyword"
+                },
+                "country_code2": {
+                  "type": "keyword"
+                },
+                "location": {
+                  "type": "geo_point"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
