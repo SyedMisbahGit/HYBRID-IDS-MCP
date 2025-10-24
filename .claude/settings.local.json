@@ -6,7 +6,8 @@
       "Bash(python file_monitor.py)",
       "Bash(python log_analyzer.py)",
       "Bash(python process_monitor.py)",
-      "Bash(chmod +x scripts/start_nids.sh)"
+      "Bash(chmod +x scripts/start_nids.sh)",
+      "Bash(python:*)"
     ],
     "deny": [],
     "ask": []

@@ -248,25 +248,42 @@ http://localhost:5601
 
 ## 📚 Documentation
 
-### Core Documentation
+### Quick Start Guides
 
-1. **[GETTING_STARTED.md](GETTING_STARTED.md)** - Quick 3-step guide to deploy the system
-2. **[ARCHITECTURE_EXPLAINED.md](ARCHITECTURE_EXPLAINED.md)** - Deep dive into two-tier architecture
-3. **[COMPLETE_INTEGRATION_GUIDE.md](COMPLETE_INTEGRATION_GUIDE.md)** - Full deployment guide
-4. **[PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md)** - Code organization and file structure
+1. **[INTEGRATION_QUICKSTART.md](INTEGRATION_QUICKSTART.md)** - 🌟 **NEW!** 10-minute complete system setup
+2. **[HIDS_QUICKSTART.md](HIDS_QUICKSTART.md)** - 5-minute HIDS deployment
+3. **[NIDS_QUICKSTART.md](NIDS_QUICKSTART.md)** - 5-minute NIDS deployment
+4. **[GETTING_STARTED.md](GETTING_STARTED.md)** - Quick 3-step guide to deploy the system
 
-### Component-Specific Documentation
+### Comprehensive Guides
 
-5. **[NIDS_DESIGN.md](NIDS_DESIGN.md)** - 🌟 **NEW!** Network IDS architecture and design
-6. **[NIDS_TESTING.md](NIDS_TESTING.md)** - 🌟 **NEW!** Complete testing methodology for NIDS
-7. **[VALIDATION_CHECKLIST.md](VALIDATION_CHECKLIST.md)** - System-wide testing procedures
+5. **[INTEGRATION_GUIDE.md](INTEGRATION_GUIDE.md)** - 🌟 **NEW!** Complete integration documentation (50+ pages)
+6. **[HIDS_GUIDE.md](HIDS_GUIDE.md)** - Complete HIDS user guide
+7. **[NIDS_COMPLETE.md](NIDS_COMPLETE.md)** - Complete NIDS documentation
+8. **[COMPLETE_INTEGRATION_GUIDE.md](COMPLETE_INTEGRATION_GUIDE.md)** - Full deployment guide
+
+### Implementation Summaries
+
+9. **[INTEGRATION_COMPLETE.md](INTEGRATION_COMPLETE.md)** - 🌟 **NEW!** Integration implementation summary
+10. **[HIDS_COMPLETE.md](HIDS_COMPLETE.md)** - HIDS implementation summary
+11. **[NIDS_DESIGN.md](NIDS_DESIGN.md)** - Network IDS architecture and design
+
+### Architecture & Design
+
+12. **[ARCHITECTURE_EXPLAINED.md](ARCHITECTURE_EXPLAINED.md)** - Deep dive into two-tier architecture
+13. **[PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md)** - Code organization and file structure
+
+### Testing & Validation
+
+14. **[NIDS_TESTING.md](NIDS_TESTING.md)** - Complete testing methodology for NIDS
+15. **[VALIDATION_CHECKLIST.md](VALIDATION_CHECKLIST.md)** - System-wide testing procedures
 
 ### Additional Resources
 
-8. **[ELK_DASHBOARD_GUIDE.md](ELK_DASHBOARD_GUIDE.md)** - Dashboard setup and customization
-9. **[REAL_TIME_DEPLOYMENT.md](REAL_TIME_DEPLOYMENT.md)** - Windows-specific deployment
-10. **[BUGFIX_AI_ENGINE.md](BUGFIX_AI_ENGINE.md)** - Known issues and fixes
-11. **[ORIGINAL_PLAN.md](ORIGINAL_PLAN.md)** - Original project blueprint
+16. **[ELK_DASHBOARD_GUIDE.md](ELK_DASHBOARD_GUIDE.md)** - Dashboard setup and customization
+17. **[REAL_TIME_DEPLOYMENT.md](REAL_TIME_DEPLOYMENT.md)** - Windows-specific deployment
+18. **[BUGFIX_AI_ENGINE.md](BUGFIX_AI_ENGINE.md)** - Known issues and fixes
+19. **[ORIGINAL_PLAN.md](ORIGINAL_PLAN.md)** - Original project blueprint
 
 ---
 
