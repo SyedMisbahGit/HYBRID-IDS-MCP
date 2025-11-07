@@ -13,6 +13,14 @@ import time
 from datetime import datetime
 from pathlib import Path
 
+# ZeroMQ for integration
+try:
+    import zmq
+    ZMQ_AVAILABLE = True
+except ImportError:
+    ZMQ_AVAILABLE = False
+    logging.warning("ZeroMQ not available. Install with: pip install pyzmq")
+
 # Import HIDS components
 from file_monitor import FileIntegrityMonitor
 from log_analyzer import LogAnalyzer
@@ -65,13 +73,28 @@ class HybridHIDS:
         self.alert_log_path = self.config.get('alert_log', 'hids_alerts.log')
         self.alert_log = None
 
+        # ZeroMQ publisher for integration
+        self.zmq_context = None
+        self.zmq_publisher = None
+        if self.config.get('zmq_enabled', True) and ZMQ_AVAILABLE:
+            try:
+                self.zmq_context = zmq.Context()
+                self.zmq_publisher = self.zmq_context.socket(zmq.PUB)
+                zmq_port = self.config.get('zmq_port', 5557)
+                self.zmq_publisher.bind(f"tcp://*:{zmq_port}")
+                logger.info(f"ZeroMQ publisher bound to port {zmq_port}")
+            except Exception as e:
+                logger.error(f"Failed to setup ZeroMQ: {e}")
+                self.zmq_publisher = None
+
         # Statistics
         self.stats = {
             'start_time': None,
             'total_alerts': 0,
             'file_alerts': 0,
             'log_alerts': 0,
-            'process_alerts': 0
+            'process_alerts': 0,
+            'zmq_published': 0
         }
 
     def initialize(self):
@@ -228,6 +251,14 @@ class HybridHIDS:
                 self.alert_log.write(json.dumps(alert) + '\n')
                 self.alert_log.flush()
 
+            # Publish to ZeroMQ for integration
+            if self.zmq_publisher:
+                try:
+                    self.zmq_publisher.send_string(json.dumps(alert), zmq.NOBLOCK)
+                    self.stats['zmq_published'] += 1
+                except Exception as e:
+                    logger.error(f"Failed to publish to ZeroMQ: {e}")
+
             # Export to Elasticsearch
             if self.es_exporter:
                 try:
@@ -276,6 +307,12 @@ class HybridHIDS:
         if self.config.get('file_monitoring', True):
             baseline_file = self.config.get('baseline_file', 'hids_baseline.json')
             self.file_monitor.save_baseline(baseline_file)
+
+        # Close ZeroMQ
+        if self.zmq_publisher:
+            self.zmq_publisher.close()
+        if self.zmq_context:
+            self.zmq_context.term()
 
         # Close alert log
         if self.alert_log:

@@ -32,9 +32,7 @@ services:
       - ./logstash/pipeline:/usr/share/logstash/pipeline
       - ./logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml
       - ./logstash/patterns:/usr/share/logstash/patterns
-      - ../nids_alerts.log:/var/log/hybrid-ids/nids_alerts.log:ro
-      - ../ai_alerts.log:/var/log/hybrid-ids/ai_alerts.log:ro
-      - ../features.csv:/var/log/hybrid-ids/features.csv:ro
+      - ../logs:/var/log/hybrid-ids:ro
     ports:
       - "5044:5044"  # Beats
       - "5000:5000/tcp"  # TCP input
