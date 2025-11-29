@@ -1,0 +1,11 @@
+﻿{
+    "baseline_file":  "config/hids_baseline.json",
+    "log_paths":  [
+                      "C:\\\\Windows\\\\System32\\\\Logs"
+                  ],
+    "zmq_port":  5557,
+    "monitor_directories":  [
+                                "C:\\\\Windows\\\\System32\\\\drivers\\\\etc"
+                            ],
+    "zmq_enabled":  true
+}

@@ -1,0 +1,8 @@
+﻿{
+    "interface":  "any",
+    "pcap_file":  "test.pcap",
+    "alert_log":  "logs/nids_alerts.log",
+    "zmq_enabled":  true,
+    "zmq_port":  5556,
+    "rules_dir":  "rules"
+}

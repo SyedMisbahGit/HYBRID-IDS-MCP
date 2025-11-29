@@ -1,0 +1,7 @@
+﻿monitor_directories:
+  - "C:\\Windows\\System32\\drivers\\etc"
+log_paths:
+  - "C:\\Windows\\System32\\Logs"
+baseline_file: "config/hids_baseline.json"
+zmq_enabled: true
+zmq_port: 5557

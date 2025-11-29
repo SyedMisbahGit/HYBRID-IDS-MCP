@@ -1,0 +1,350 @@
+# Hybrid IDS Configuration
+# Complete configuration for integrated NIDS + HIDS system
+
+# General settings
+general:
+  name: "Hybrid-IDS"
+  version: "1.0.0"
+  environment: "production"  # production, development, testing
+
+# HIDS Configuration
+hids:
+  enabled: true
+  config_path: "config/hids/hids_config.yaml"
+
+  # Alert forwarding
+  alert_forwarding:
+    enabled: true
+    endpoint: "tcp://localhost:5557"  # ZMQ endpoint for publishing alerts
+
+# NIDS Configuration
+nids:
+  enabled: true
+  config_path: "config/nids/nids_config.yaml"
+
+  # Alert receiving
+  alert_receiving:
+    enabled: true
+    endpoint: "tcp://localhost:5556"  # ZMQ endpoint for receiving alerts
+
+# Unified Alert Manager Configuration
+alert_manager:
+  # Input sources
+  inputs:
+    nids:
+      enabled: true
+      endpoint: "tcp://localhost:5556"
+
+    hids:
+      enabled: true
+      endpoint: "tcp://localhost:5557"
+
+  # Output destinations
+  outputs:
+    # Console output
+    console:
+      enabled: true
+      verbose: true  # Show detailed alert information
+      colors: true   # Use colored output
+
+    # File output
+    file:
+      enabled: true
+      directory: "logs/alerts"
+      filename: "unified_alerts.jsonl"
+      rotation:
+        enabled: true
+        max_size_mb: 100
+        max_files: 10
+
+    # Elasticsearch output
+    elasticsearch:
+      enabled: true
+      host: "http://localhost:9200"
+      index_pattern: "hybrid-ids-alerts-{date}"
+      verify_certs: false
+      username: ""
+      password: ""
+
+      # Bulk indexing
+      bulk:
+        enabled: true
+        batch_size: 100
+        flush_interval: 30  # seconds
+
+    # Syslog output (optional)
+    syslog:
+      enabled: false
+      host: "localhost"
+      port: 514
+      protocol: "udp"  # udp or tcp
+      facility: "local0"
+
+  # Processing settings
+  processing:
+    worker_threads: 4
+    queue_size: 10000
+
+    # Alert enrichment
+    enrichment:
+      enabled: true
+      geoip: false  # Requires GeoIP database
+      dns_lookup: true
+      threat_intel: false  # Requires threat intel feed
+
+    # Alert deduplication
+    deduplication:
+      enabled: true
+      time_window: 60  # seconds
+      similar_threshold: 0.85  # 0-1, similarity threshold
+
+# Event Correlation Configuration
+correlation:
+  enabled: true
+
+  # Correlation window
+  window_seconds: 600  # 10 minutes
+  max_events: 10000
+
+  # Correlation rules
+  rules:
+    # Built-in rules are defined in event_correlator.py
+    # Custom rules can be added here
+    custom_rules: []
+
+  # Advanced correlation
+  advanced:
+    ml_correlation: false  # Experimental ML-based correlation
+    graph_analysis: false  # Graph-based attack path detection
+
+# Machine Learning Integration
+ml:
+  enabled: true
+
+  # Model settings
+  models:
+    anomaly_detection:
+      enabled: true
+      model_path: "models/isolation_forest.pkl"
+      threshold: 0.85
+
+    attack_classification:
+      enabled: true
+      model_path: "models/random_forest.pkl"
+      threshold: 0.75
+
+  # Feature extraction
+  features:
+    network_features: true
+    host_features: true
+    temporal_features: true
+    behavioral_features: true
+
+# Dashboard and Visualization
+dashboard:
+  enabled: true
+
+  # ELK Stack
+  elk:
+    elasticsearch:
+      host: "http://localhost:9200"
+      indices:
+        - "hybrid-ids-alerts-*"
+        - "hids-events-*"
+        - "nids-events-*"
+
+    kibana:
+      host: "http://localhost:5601"
+      dashboards:
+        - "hybrid-ids-overview"
+        - "threat-analysis"
+        - "network-traffic"
+        - "host-activity"
+
+    logstash:
+      host: "localhost"
+      port: 5044
+      pipeline: "hybrid-ids"
+
+  # Real-time dashboard (optional)
+  realtime:
+    enabled: false
+    port: 8080
+    refresh_interval: 5  # seconds
+
+# Monitoring and Health Checks
+monitoring:
+  enabled: true
+
+  # Statistics reporting
+  stats_interval: 60  # seconds
+  detailed_stats: true
+
+  # Health checks
+  health_checks:
+    enabled: true
+    interval: 30  # seconds
+
+    checks:
+      - component: "hids"
+        critical: true
+      - component: "alert_manager"
+        critical: true
+      - component: "correlator"
+        critical: false
+      - component: "elasticsearch"
+        critical: false
+
+  # Performance monitoring
+  performance:
+    enabled: true
+    metrics:
+      - "cpu_usage"
+      - "memory_usage"
+      - "alert_rate"
+      - "processing_latency"
+      - "queue_size"
+
+# Alerting and Notifications
+notifications:
+  enabled: true
+
+  # Email notifications
+  email:
+    enabled: false
+    smtp_server: "smtp.gmail.com"
+    smtp_port: 587
+    use_tls: true
+    username: ""
+    password: ""
+    from_address: "hybrid-ids@example.com"
+    to_addresses:
+      - "security-team@example.com"
+
+    # Alert level threshold
+    min_severity: "HIGH"  # Send emails only for HIGH and CRITICAL
+
+  # Slack notifications
+  slack:
+    enabled: false
+    webhook_url: ""
+    channel: "#security-alerts"
+    username: "Hybrid-IDS"
+    min_severity: "HIGH"
+
+  # SMS notifications (via Twilio)
+  sms:
+    enabled: false
+    account_sid: ""
+    auth_token: ""
+    from_number: ""
+    to_numbers: []
+    min_severity: "CRITICAL"  # Send SMS only for CRITICAL alerts
+
+# Security and Access Control
+security:
+  # API authentication
+  api:
+    enabled: false
+    port: 8443
+    auth_required: true
+    api_key: ""
+    ssl:
+      enabled: false
+      cert_file: ""
+      key_file: ""
+
+  # Alert signing
+  alert_signing:
+    enabled: false
+    algorithm: "SHA256"
+    secret_key: ""
+
+# Data Retention
+retention:
+  # Alert data
+  alerts:
+    days: 90
+    archive: true
+    archive_path: "archive/alerts"
+
+  # Event data
+  events:
+    days: 30
+    archive: true
+    archive_path: "archive/events"
+
+  # Logs
+  logs:
+    days: 14
+    compress: true
+
+# Performance Tuning
+performance:
+  # Threading
+  threads:
+    alert_processor: 4
+    event_correlator: 2
+    enrichment: 2
+
+  # Queue sizes
+  queues:
+    alert_queue: 10000
+    event_queue: 20000
+    correlation_queue: 5000
+
+  # Batch processing
+  batching:
+    enabled: true
+    alert_batch_size: 100
+    event_batch_size: 500
+
+  # Resource limits
+  limits:
+    max_memory_mb: 2048
+    max_cpu_percent: 80
+
+# Logging
+logging:
+  level: "INFO"  # DEBUG, INFO, WARNING, ERROR, CRITICAL
+
+  # File logging
+  file:
+    enabled: true
+    path: "logs/hybrid_ids.log"
+    max_size_mb: 50
+    backup_count: 5
+
+  # Console logging
+  console:
+    enabled: true
+    colors: true
+
+  # Component-specific logging
+  components:
+    hids: "INFO"
+    nids: "INFO"
+    alert_manager: "INFO"
+    correlator: "INFO"
+    ml: "WARNING"
+
+# Development and Testing
+development:
+  # Test mode
+  test_mode: false
+
+  # Mock data generation
+  mock_data:
+    enabled: false
+    alert_rate: 10  # alerts per minute
+    event_types:
+      - "port_scan"
+      - "sql_injection"
+      - "file_modification"
+      - "suspicious_process"
+
+  # Debug features
+  debug:
+    save_raw_events: false
+    verbose_correlation: false
+    profile_performance: false
