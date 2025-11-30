@@ -127,6 +127,24 @@ class CICIDS2017Loader:
             logger.info(f"Sampled {sample_size} rows")
         
         return data
+
+    def load_processed_data(self, filepath):
+        """
+        Load pre-processed/sampled data directly
+        
+        Args:
+            filepath: Path to CSV file
+            
+        Returns:
+            DataFrame
+        """
+        logger.info(f"Loading processed data from: {filepath}")
+        if not os.path.exists(filepath):
+            raise FileNotFoundError(f"File not found: {filepath}")
+            
+        df = pd.read_csv(filepath)
+        logger.info(f"Loaded {len(df)} rows")
+        return df
     
     def preprocess(self, data, target_column=' Label'):
         """

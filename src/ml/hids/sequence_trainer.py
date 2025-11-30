@@ -25,19 +25,24 @@ class HIDSSequenceTrainer:
     Train HIDS using LSTM Autoencoder for sequence anomaly detection
     """
     
-    def __init__(self, model_dir='../../models/hids'):
+    def __init__(self, model_dir=None):
         """
         Initialize trainer
         
         Args:
             model_dir: Directory to save trained models
         """
-        self.model_dir = model_dir
+        if model_dir is None:
+            # Resolve relative to this script
+            base_dir = os.path.dirname(os.path.abspath(__file__))
+            model_dir = os.path.join(base_dir, '../../../models/hids')
+            
+        self.model_dir = os.path.normpath(model_dir)
         self.model = None
         self.threshold = None
         
         # Create model directory if it doesn't exist
-        os.makedirs(model_dir, exist_ok=True)
+        os.makedirs(self.model_dir, exist_ok=True)
     
     def build_model(self, vocab_size, sequence_length, embedding_dim=32, lstm_units=64):
         """
@@ -312,6 +317,20 @@ if __name__ == "__main__":
         # Evaluate
         logger.info("\nStep 3: Evaluating model...")
         metrics = trainer.evaluate(X_test, y_test)
+        
+        # Append to Performance Report
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        report_path = os.path.join(base_dir, '../../../models/performance_report.txt')
+        with open(report_path, 'a') as f:
+            f.write("\n\n")
+            f.write(f"Model: HIDS LSTM (Sequence Anomaly)\n")
+            f.write(f"Accuracy: {metrics['accuracy']:.4f}\n")
+            if metrics['roc_auc']:
+                f.write(f"ROC-AUC: {metrics['roc_auc']:.4f}\n")
+            f.write("Classification Report:\n")
+            f.write(metrics['classification_report'])
+            f.write("\n" + "="*60 + "\n")
+        logger.info(f"✅ Performance report updated: {report_path}")
         
         # Save
         logger.info("\nStep 4: Saving model...")

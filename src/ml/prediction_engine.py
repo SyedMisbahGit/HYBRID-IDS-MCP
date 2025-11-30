@@ -1,8 +1,14 @@
 """
-Unified Prediction Engine
+SENTINEL | CORE - Unified Prediction Engine
 
-Loads all trained models (NIDS SIDS, NIDS A-IDS, HIDS LSTM)
-and provides a unified interface for real-time prediction.
+NOTE: This engine handles all ML inference for the SIEM dashboard.
+TODO: Add model versioning and hot-reload capability for production deployment.
+TODO: Implement fallback to secondary models if primary fails.
+
+Architecture:
+- NIDS SIDS: Random Forest for multi-class attack classification
+- NIDS A-IDS: Isolation Forest for anomaly detection
+- HIDS: LSTM Autoencoder for system call sequence analysis
 """
 
 import numpy as np
@@ -26,14 +32,19 @@ class PredictionEngine:
     - HIDS (LSTM Autoencoder)
     """
     
-    def __init__(self, models_dir='models'):
+    def __init__(self, models_dir=None):
         """
         Initialize prediction engine
         
         Args:
             models_dir: Base directory containing model subdirectories
         """
-        self.models_dir = models_dir
+        if models_dir is None:
+            # Resolve relative to this script
+            base_dir = os.path.dirname(os.path.abspath(__file__))
+            models_dir = os.path.join(base_dir, '../../models')
+            
+        self.models_dir = os.path.normpath(models_dir)
         
         # NIDS models
         self.nids_sids_model = None
@@ -77,11 +88,16 @@ class PredictionEngine:
                 self.nids_feature_names = json.load(f)
             
             self.nids_sids_loaded = True
-            logger.info("✅ NIDS SIDS model loaded successfully")
+            logger.info("[SUCCESS] NIDS SIDS model loaded successfully")
             logger.info(f"   Classes: {self.nids_label_encoder.classes_}")
             
+        except FileNotFoundError as e:
+            logger.error(f"[!] CRITICAL: NIDS SIDS model files not found - {e}")
+            logger.warning("[!] Run training script: python src/ml/nids/sids_trainer.py")
+            self.nids_sids_loaded = False
         except Exception as e:
-            logger.error(f"❌ Failed to load NIDS SIDS model: {e}")
+            logger.error(f"[!] CRITICAL FAILURE in NIDS SIDS loader: {e}")
+            logger.warning("[!] Defaulting to Safe Mode (no SIDS predictions)")
             self.nids_sids_loaded = False
     
     def load_nids_aids(self):
@@ -100,11 +116,11 @@ class PredictionEngine:
                 self.aids_threshold = json.load(f)['threshold']
             
             self.nids_aids_loaded = True
-            logger.info("✅ NIDS A-IDS model loaded successfully")
+            logger.info("[SUCCESS] NIDS A-IDS model loaded successfully")
             logger.info(f"   Anomaly threshold: {self.aids_threshold:.4f}")
             
         except Exception as e:
-            logger.error(f"❌ Failed to load NIDS A-IDS model: {e}")
+            logger.error(f"[ERROR] Failed to load NIDS A-IDS model: {e}")
             self.nids_aids_loaded = False
     
     def load_hids(self):
@@ -127,11 +143,11 @@ class PredictionEngine:
                 self.hids_threshold = json.load(f)['threshold']
             
             self.hids_loaded = True
-            logger.info("✅ HIDS model loaded successfully")
+            logger.info("[SUCCESS] HIDS model loaded successfully")
             logger.info(f"   Anomaly threshold: {self.hids_threshold:.4f}")
             
         except Exception as e:
-            logger.error(f"❌ Failed to load HIDS model: {e}")
+            logger.error(f"[ERROR] Failed to load HIDS model: {e}")
             self.hids_loaded = False
     
     def load_all(self):
@@ -146,9 +162,9 @@ class PredictionEngine:
         
         logger.info("\n" + "="*60)
         logger.info("Model Loading Summary:")
-        logger.info(f"  NIDS SIDS: {'✅ Loaded' if self.nids_sids_loaded else '❌ Not loaded'}")
-        logger.info(f"  NIDS A-IDS: {'✅ Loaded' if self.nids_aids_loaded else '❌ Not loaded'}")
-        logger.info(f"  HIDS: {'✅ Loaded' if self.hids_loaded else '❌ Not loaded'}")
+        logger.info(f"  NIDS SIDS: {'[LOADED]' if self.nids_sids_loaded else '[NOT LOADED]'}")
+        logger.info(f"  NIDS A-IDS: {'[LOADED]' if self.nids_aids_loaded else '[NOT LOADED]'}")
+        logger.info(f"  HIDS: {'[LOADED]' if self.hids_loaded else '[NOT LOADED]'}")
         logger.info("="*60)
     
     def predict_nids(self, network_features):

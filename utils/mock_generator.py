@@ -102,7 +102,7 @@ class MockDataGenerator:
         output_file = os.path.join(output_dir, 'mock_cicids2017.csv')
         df.to_csv(output_file, index=False)
         
-        logger.info(f"✅ Generated mock CIC-IDS2017: {output_file}")
+        logger.info(f"[SUCCESS] Generated mock CIC-IDS2017: {output_file}")
         logger.info(f"   Samples: {num_samples}")
         logger.info(f"   Features: {len(feature_names) - 1}")
         logger.info(f"   Label distribution:\n{df[' Label'].value_counts()}")
@@ -171,11 +171,147 @@ class MockDataGenerator:
             with open(filepath, 'w') as f:
                 f.write(' '.join(map(str, syscalls)))
         
-        logger.info(f"✅ Generated mock ADFA-LD:")
+        logger.info(f"[SUCCESS] Generated mock ADFA-LD:")
         logger.info(f"   Training dir: {training_dir} ({num_normal} files)")
         logger.info(f"   Attack dir: {attack_dir} ({num_attack} files)")
         
         return training_dir, attack_dir
+    
+    @staticmethod
+    def get_cicids_feature_names():
+        """Get list of CIC-IDS2017 feature names"""
+        return [
+            ' Destination Port', ' Flow Duration', ' Total Fwd Packets',
+            ' Total Backward Packets', 'Total Length of Fwd Packets',
+            ' Total Length of Bwd Packets', ' Fwd Packet Length Max',
+            ' Fwd Packet Length Min', ' Fwd Packet Length Mean',
+            ' Fwd Packet Length Std', 'Bwd Packet Length Max',
+            ' Bwd Packet Length Min', ' Bwd Packet Length Mean',
+            ' Bwd Packet Length Std', 'Flow Bytes/s', ' Flow Packets/s',
+            ' Flow IAT Mean', ' Flow IAT Std', ' Flow IAT Max', ' Flow IAT Min',
+            'Fwd IAT Total', ' Fwd IAT Mean', ' Fwd IAT Std', ' Fwd IAT Max',
+            ' Fwd IAT Min', 'Bwd IAT Total', ' Bwd IAT Mean', ' Bwd IAT Std',
+            ' Bwd IAT Max', ' Bwd IAT Min', 'Fwd PSH Flags', ' Bwd PSH Flags',
+            ' Fwd URG Flags', ' Bwd URG Flags', ' Fwd Header Length',
+            ' Bwd Header Length', 'Fwd Packets/s', ' Bwd Packets/s',
+            ' Min Packet Length', ' Max Packet Length', ' Packet Length Mean',
+            ' Packet Length Std', ' Packet Length Variance', 'FIN Flag Count',
+            ' SYN Flag Count', ' RST Flag Count', ' PSH Flag Count',
+            ' ACK Flag Count', ' URG Flag Count', ' CWE Flag Count',
+            ' ECE Flag Count', ' Down/Up Ratio', ' Average Packet Size',
+            ' Avg Fwd Segment Size', ' Avg Bwd Segment Size',
+            'Fwd Header Length.1', ' Fwd Avg Bytes/Bulk', ' Fwd Avg Packets/Bulk',
+            ' Fwd Avg Bulk Rate', ' Bwd Avg Bytes/Bulk', ' Bwd Avg Packets/Bulk',
+            ' Bwd Avg Bulk Rate', 'Subflow Fwd Packets', ' Subflow Fwd Bytes',
+            ' Subflow Bwd Packets', ' Subflow Bwd Bytes',
+            ' Init_Win_bytes_forward', ' Init_Win_bytes_backward',
+            ' act_data_pkt_fwd', ' min_seg_size_forward', 'Active Mean',
+            ' Active Std', ' Active Max', ' Active Min', 'Idle Mean',
+            ' Idle Std', ' Idle Max', ' Idle Min'
+        ]
+
+    @staticmethod
+    def generate_single_sample(attack_type='BENIGN', intensity='Medium'):
+        """
+        Generate a single feature sample for real-time simulation
+        
+        Args:
+            attack_type: 'BENIGN', 'DDoS', 'PortScan', 'BruteForce'
+            intensity: 'Low', 'Medium', 'High'
+            
+        Returns:
+            DataFrame with 1 row and 78 features
+        """
+        feature_names = MockDataGenerator.get_cicids_feature_names()
+        data = {}
+        
+        # Base multipliers based on intensity
+        multiplier = 1.0
+        if intensity == 'Low': multiplier = 0.5
+        elif intensity == 'High': multiplier = 2.0
+        
+        # Generate base random data (Normal-ish)
+        for feature in feature_names:
+            if 'Port' in feature:
+                data[feature] = [np.random.choice([80, 443, 22, 53])]
+            elif 'Flag' in feature or 'Count' in feature:
+                data[feature] = [0]
+            else:
+                data[feature] = [np.abs(np.random.randn() * 100)]
+        
+        # Inject Attack Patterns
+        if attack_type == 'DDoS':
+            # High packet count, small duration, high bytes/sec
+            data[' Total Fwd Packets'] = [np.random.randint(1000, 5000) * multiplier]
+            data[' Flow Duration'] = [np.random.randint(100, 1000)]
+            data['Flow Bytes/s'] = [np.random.randint(100000, 1000000) * multiplier]
+            data[' Fwd Packet Length Max'] = [1000 * multiplier]
+            
+        elif attack_type == 'PortScan':
+            # Many ports (handled by logic outside, but features show short flows)
+            data[' Flow Duration'] = [np.random.randint(1, 10)]
+            data[' Total Fwd Packets'] = [2]
+            data['FIN Flag Count'] = [1]
+            data[' SYN Flag Count'] = [1]
+            
+        elif attack_type == 'BruteForce':
+            # SSH/FTP port, medium duration, many small packets
+            data[' Destination Port'] = [22]
+            data[' Total Fwd Packets'] = [np.random.randint(50, 200) * multiplier]
+            data[' Fwd Packet Length Mean'] = [50]
+            data[' PSH Flag Count'] = [1]
+            
+        return pd.DataFrame(data)
+    
+    @staticmethod
+    def generate_syscall_sequence(attack_type='BENIGN', intensity='Medium', length=100):
+        """
+        Generate system call sequence for HIDS simulation
+        
+        Args:
+            attack_type: 'BENIGN', 'Rootkit', 'Ransomware'
+            intensity: 'Low', 'Medium', 'High'
+            length: Sequence length
+            
+        Returns:
+            List of syscall IDs
+        """
+        # Base multiplier
+        multiplier = 1.0
+        if intensity == 'Low': multiplier = 0.5
+        elif intensity == 'High': multiplier = 2.0
+        
+        # Normal syscalls (common operations)
+        normal_syscalls = [0, 1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 12, 13, 14, 15]
+        
+        if attack_type == 'Rootkit':
+            # Rootkit: execve, setuid, write, open, close (privilege escalation pattern)
+            malicious = [59, 105, 1, 2, 3]
+            # Mix 60% malicious, 40% normal
+            sequence = []
+            for _ in range(length):
+                if np.random.random() < 0.6 * multiplier:
+                    sequence.append(np.random.choice(malicious))
+                else:
+                    sequence.append(np.random.choice(normal_syscalls))
+            return sequence
+            
+        elif attack_type == 'Ransomware':
+            # Ransomware: High frequency write/rename/open (file encryption pattern)
+            malicious = [1, 82, 2]
+            # Mix 70% malicious (very high I/O), 30% normal
+            sequence = []
+            for _ in range(int(length * (1 + multiplier))):
+                if np.random.random() < 0.7:
+                    sequence.append(np.random.choice(malicious))
+                else:
+                    sequence.append(np.random.choice(normal_syscalls))
+            return sequence[:length]
+            
+        else:  # BENIGN
+            # Normal distribution of common syscalls
+            return list(np.random.choice(normal_syscalls, length))
+
 
 
 def prompt_user_for_mock_data(dataset_name):
@@ -189,7 +325,7 @@ def prompt_user_for_mock_data(dataset_name):
         Boolean indicating user's choice
     """
     print(f"\n{'='*60}")
-    print(f"⚠️  {dataset_name} dataset not found!")
+    print(f"[WARNING] {dataset_name} dataset not found!")
     print(f"{'='*60}")
     print(f"\nOptions:")
     print(f"1. Generate MOCK DATA for testing (quick, but not accurate)")
@@ -202,7 +338,7 @@ def prompt_user_for_mock_data(dataset_name):
         if choice in ['y', 'yes']:
             return True
         elif choice in ['n', 'no']:
-            print(f"\n❌ Cannot proceed without data.")
+            print(f"\n[ERROR] Cannot proceed without data.")
             print(f"Run: python scripts/download_instructions.py")
             return False
         else:
@@ -229,9 +365,205 @@ if __name__ == "__main__":
     )
     
     print("\n" + "="*60)
-    print("✅ Mock data generation complete!")
+    print("[SUCCESS] Mock data generation complete!")
     print("="*60)
-    print("\n⚠️  WARNING: This is MOCK DATA for testing only!")
+    print("\n[WARNING] This is MOCK DATA for testing only!")
+    print("Models trained on this data will have random accuracy.")
+    print("\nFor real results, download actual datasets:")
+    print("  python scripts/download_instructions.py")
+
+    
+    @staticmethod
+    def get_cicids_feature_names():
+        """Get list of CIC-IDS2017 feature names"""
+        return [
+            ' Destination Port', ' Flow Duration', ' Total Fwd Packets',
+            ' Total Backward Packets', 'Total Length of Fwd Packets',
+            ' Total Length of Bwd Packets', ' Fwd Packet Length Max',
+            ' Fwd Packet Length Min', ' Fwd Packet Length Mean',
+            ' Fwd Packet Length Std', 'Bwd Packet Length Max',
+            ' Bwd Packet Length Min', ' Bwd Packet Length Mean',
+            ' Bwd Packet Length Std', 'Flow Bytes/s', ' Flow Packets/s',
+            ' Flow IAT Mean', ' Flow IAT Std', ' Flow IAT Max', ' Flow IAT Min',
+            'Fwd IAT Total', ' Fwd IAT Mean', ' Fwd IAT Std', ' Fwd IAT Max',
+            ' Fwd IAT Min', 'Bwd IAT Total', ' Bwd IAT Mean', ' Bwd IAT Std',
+            ' Bwd IAT Max', ' Bwd IAT Min', 'Fwd PSH Flags', ' Bwd PSH Flags',
+            ' Fwd URG Flags', ' Bwd URG Flags', ' Fwd Header Length',
+            ' Bwd Header Length', 'Fwd Packets/s', ' Bwd Packets/s',
+            ' Min Packet Length', ' Max Packet Length', ' Packet Length Mean',
+            ' Packet Length Std', ' Packet Length Variance', 'FIN Flag Count',
+            ' SYN Flag Count', ' RST Flag Count', ' PSH Flag Count',
+            ' ACK Flag Count', ' URG Flag Count', ' CWE Flag Count',
+            ' ECE Flag Count', ' Down/Up Ratio', ' Average Packet Size',
+            ' Avg Fwd Segment Size', ' Avg Bwd Segment Size',
+            'Fwd Header Length.1', ' Fwd Avg Bytes/Bulk', ' Fwd Avg Packets/Bulk',
+            ' Fwd Avg Bulk Rate', ' Bwd Avg Bytes/Bulk', ' Bwd Avg Packets/Bulk',
+            ' Bwd Avg Bulk Rate', 'Subflow Fwd Packets', ' Subflow Fwd Bytes',
+            ' Subflow Bwd Packets', ' Subflow Bwd Bytes',
+            ' Init_Win_bytes_forward', ' Init_Win_bytes_backward',
+            ' act_data_pkt_fwd', ' min_seg_size_forward', 'Active Mean',
+            ' Active Std', ' Active Max', ' Active Min', 'Idle Mean',
+            ' Idle Std', ' Idle Max', ' Idle Min'
+        ]
+
+    @staticmethod
+    def generate_single_sample(attack_type='BENIGN', intensity='Medium'):
+        """
+        Generate a single feature sample for real-time simulation
+        
+        Args:
+            attack_type: 'BENIGN', 'DDoS', 'PortScan', 'BruteForce'
+            intensity: 'Low', 'Medium', 'High'
+            
+        Returns:
+            DataFrame with 1 row and 78 features
+        """
+        feature_names = MockDataGenerator.get_cicids_feature_names()
+        data = {}
+        
+        # Base multipliers based on intensity
+        multiplier = 1.0
+        if intensity == 'Low': multiplier = 0.5
+        elif intensity == 'High': multiplier = 2.0
+        
+        # Generate base random data (Normal-ish)
+        for feature in feature_names:
+            if 'Port' in feature:
+                data[feature] = [np.random.choice([80, 443, 22, 53])]
+            elif 'Flag' in feature or 'Count' in feature:
+                data[feature] = [0]
+            else:
+                data[feature] = [np.abs(np.random.randn() * 100)]
+        
+        # Inject Attack Patterns
+        if attack_type == 'DDoS':
+            # High packet count, small duration, high bytes/sec
+            data[' Total Fwd Packets'] = [np.random.randint(1000, 5000) * multiplier]
+            data[' Flow Duration'] = [np.random.randint(100, 1000)]
+            data['Flow Bytes/s'] = [np.random.randint(100000, 1000000) * multiplier]
+            data[' Fwd Packet Length Max'] = [1000 * multiplier]
+            
+        elif attack_type == 'PortScan':
+            # Many ports (handled by logic outside, but features show short flows)
+            data[' Flow Duration'] = [np.random.randint(1, 10)]
+            data[' Total Fwd Packets'] = [2]
+            data['FIN Flag Count'] = [1]
+            data[' SYN Flag Count'] = [1]
+            
+        elif attack_type == 'BruteForce':
+            # SSH/FTP port, medium duration, many small packets
+            data[' Destination Port'] = [22]
+            data[' Total Fwd Packets'] = [np.random.randint(50, 200) * multiplier]
+            data[' Fwd Packet Length Mean'] = [50]
+            data[' PSH Flag Count'] = [1]
+            
+        return pd.DataFrame(data)
+    
+    @staticmethod
+    def generate_syscall_sequence(attack_type='BENIGN', intensity='Medium', length=100):
+        """
+        Generate system call sequence for HIDS simulation
+        
+        Args:
+            attack_type: 'BENIGN', 'Rootkit', 'Ransomware'
+            intensity: 'Low', 'Medium', 'High'
+            length: Sequence length
+            
+        Returns:
+            List of syscall IDs
+        """
+        # Base multiplier
+        multiplier = 1.0
+        if intensity == 'Low': multiplier = 0.5
+        elif intensity == 'High': multiplier = 2.0
+        
+        # Normal syscalls (common operations)
+        normal_syscalls = [0, 1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 12, 13, 14, 15]
+        
+        if attack_type == 'Rootkit':
+            # Rootkit: execve, setuid, write, open, close (privilege escalation pattern)
+            malicious = [59, 105, 1, 2, 3]
+            # Mix 60% malicious, 40% normal
+            sequence = []
+            for _ in range(length):
+                if np.random.random() < 0.6 * multiplier:
+                    sequence.append(np.random.choice(malicious))
+                else:
+                    sequence.append(np.random.choice(normal_syscalls))
+            return sequence
+            
+        elif attack_type == 'Ransomware':
+            # Ransomware: High frequency write/rename/open (file encryption pattern)
+            malicious = [1, 82, 2]
+            # Mix 70% malicious (very high I/O), 30% normal
+            sequence = []
+            for _ in range(int(length * (1 + multiplier))):
+                if np.random.random() < 0.7:
+                    sequence.append(np.random.choice(malicious))
+                else:
+                    sequence.append(np.random.choice(normal_syscalls))
+            return sequence[:length]
+            
+        else:  # BENIGN
+            # Normal distribution of common syscalls
+            return list(np.random.choice(normal_syscalls, length))
+
+
+
+def prompt_user_for_mock_data(dataset_name):
+    """
+    Prompt user if they want to generate mock data
+    
+    Args:
+        dataset_name: Name of dataset (e.g., 'CIC-IDS2017', 'ADFA-LD')
+        
+    Returns:
+        Boolean indicating user's choice
+    """
+    print(f"\n{'='*60}")
+    print(f"[WARNING] {dataset_name} dataset not found!")
+    print(f"{'='*60}")
+    print(f"\nOptions:")
+    print(f"1. Generate MOCK DATA for testing (quick, but not accurate)")
+    print(f"2. Download real dataset (see scripts/download_instructions.py)")
+    print(f"\nMock data is synthetic and will produce random results.")
+    print(f"Use it ONLY for testing the code pipeline.")
+    
+    while True:
+        choice = input(f"\nGenerate mock data? (y/n): ").strip().lower()
+        if choice in ['y', 'yes']:
+            return True
+        elif choice in ['n', 'no']:
+            print(f"\n[ERROR] Cannot proceed without data.")
+            print(f"Run: python scripts/download_instructions.py")
+            return False
+        else:
+            print("Please enter 'y' or 'n'")
+
+
+# Example usage
+if __name__ == "__main__":
+    print("="*60)
+    print("Mock Data Generator for Hybrid IDS")
+    print("="*60)
+    
+    generator = MockDataGenerator()
+    
+    # Generate CIC-IDS2017 mock
+    print("\n1. Generating CIC-IDS2017 mock data...")
+    cicids_file = generator.generate_cicids2017_mock(num_samples=1000)
+    
+    # Generate ADFA-LD mock
+    print("\n2. Generating ADFA-LD mock data...")
+    training_dir, attack_dir = generator.generate_adfa_ld_mock(
+        num_normal=100,
+        num_attack=50
+    )
+    
+    print("\n" + "="*60)
+    print("[SUCCESS] Mock data generation complete!")
+    print("="*60)
+    print("\n[WARNING] This is MOCK DATA for testing only!")
     print("Models trained on this data will have random accuracy.")
     print("\nFor real results, download actual datasets:")
     print("  python scripts/download_instructions.py")

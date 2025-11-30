@@ -24,20 +24,25 @@ class AIDSTrainer:
     Train A-IDS (Anomaly-based IDS) using unsupervised learning
     """
     
-    def __init__(self, model_dir='../../models/nids'):
+    def __init__(self, model_dir=None):
         """
         Initialize trainer
         
         Args:
             model_dir: Directory to save trained models
         """
-        self.model_dir = model_dir
+        if model_dir is None:
+            # Resolve relative to this script
+            base_dir = os.path.dirname(os.path.abspath(__file__))
+            model_dir = os.path.join(base_dir, '../../../models/nids')
+            
+        self.model_dir = os.path.normpath(model_dir)
         self.model = None
         self.scaler = None
         self.threshold = None
         
         # Create model directory if it doesn't exist
-        os.makedirs(model_dir, exist_ok=True)
+        os.makedirs(self.model_dir, exist_ok=True)
     
     def train(self, X_train_benign, contamination=0.01, random_state=42):
         """
@@ -196,9 +201,17 @@ if __name__ == "__main__":
     loader = CICIDS2017Loader()
     
     try:
-        # Load dataset
-        logger.info("\nStep 1: Loading dataset...")
-        data = loader.load_data(sample_size=50000)  # Use 50k samples for faster training
+        # Step 1: Check for Sampled Data (Big Data Solution)
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        sampled_data_path = os.path.join(base_dir, '../../../data/processed/train_nids_sampled.csv')
+        
+        if os.path.exists(sampled_data_path):
+            logger.info("\nStep 1: Loading SMART SAMPLED dataset (High Accuracy Mode)...")
+            data = loader.load_processed_data(sampled_data_path)
+        else:
+            # Fallback
+            logger.info("\nStep 1: Loading dataset (Standard Mode)...")
+            data = loader.load_data(sample_size=50000)
         
         # Preprocess
         logger.info("\nStep 2: Preprocessing...")
@@ -216,6 +229,19 @@ if __name__ == "__main__":
         # Evaluate
         logger.info("\nStep 5: Evaluating model...")
         metrics = trainer.evaluate(X_test, y_test_binary)
+        
+        # Append to Performance Report
+        report_path = os.path.join(base_dir, '../../../models/performance_report.txt')
+        with open(report_path, 'a') as f:
+            f.write("\n\n")
+            f.write(f"Model: NIDS A-IDS (Isolation Forest)\n")
+            f.write(f"Accuracy: {metrics['accuracy']:.4f}\n")
+            if metrics['roc_auc']:
+                f.write(f"ROC-AUC: {metrics['roc_auc']:.4f}\n")
+            f.write("Classification Report:\n")
+            f.write(metrics['classification_report'])
+            f.write("\n" + "="*60 + "\n")
+        logger.info(f"✅ Performance report updated: {report_path}")
         
         # Save
         logger.info("\nStep 6: Saving model...")

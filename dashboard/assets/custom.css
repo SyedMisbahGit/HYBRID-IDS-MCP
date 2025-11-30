@@ -1,82 +1,444 @@
-/* Custom CSS for SIEM Dashboard */
+/*
+ * SENTINEL | CORE - Custom Stylesheet
+ * Security Operations Center Dashboard
+ * 
+ * Design Philosophy: Cyberpunk meets Military-Grade Security
+ * Inspired by: IBM QRadar, Splunk Enterprise, CrowdStrike Falcon
+ */
 
-/* Font Awesome Icons */
-@import url("https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css");
+/* ============================================================================
+   GLOBAL FONT & BASE STYLES
+   ============================================================================ */
 
-/* Global Styles */
-body {
-  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-  background-color: #0d0d0d !important;
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+* {
+    font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace !important;
 }
 
-/* Card Enhancements */
+body {
+    background: #0a0a0a;
+    letter-spacing: 0.02em;
+}
+
+/* ============================================================================
+   NEON ACCENT BORDERS
+   ============================================================================ */
+
 .card {
-  box-shadow: 0 4px 6px rgba(0, 255, 0, 0.1);
-  transition: transform 0.2s, box-shadow 0.2s;
+    border: 1px solid #1a1a1a !important;
+    transition: all 0.3s ease;
 }
 
 .card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 12px rgba(0, 255, 0, 0.2);
+    border-color: #00f3ff !important;
+    box-shadow: 0 0 10px rgba(0, 243, 255, 0.3);
 }
 
-/* Scrollbar Styling */
+/* Active card indicator */
+.card.active-card {
+    border-left: 3px solid #00f3ff !important;
+    box-shadow: -5px 0 15px rgba(0, 243, 255, 0.2);
+}
+
+/* Danger/Alert cards */
+.card.alert-card {
+    border-color: #ff2a2a !important;
+    box-shadow: 0 0 15px rgba(255, 42, 42, 0.3);
+    animation: pulse-red 2s infinite;
+}
+
+@keyframes pulse-red {
+    0%, 100% { box-shadow: 0 0 15px rgba(255, 42, 42, 0.3); }
+    50% { box-shadow: 0 0 25px rgba(255, 42, 42, 0.5); }
+}
+
+/* ============================================================================
+   CRT SCANLINE EFFECT
+   ============================================================================ */
+
+.scan-line {
+    position: relative;
+    overflow: hidden;
+}
+
+.scan-line::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: repeating-linear-gradient(
+        0deg,
+        rgba(0, 0, 0, 0.15),
+        rgba(0, 0, 0, 0.15) 1px,
+        transparent 1px,
+        transparent 2px
+    );
+    pointer-events: none;
+    z-index: 1;
+}
+
+.scan-line::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background: linear-gradient(
+        to bottom,
+        rgba(0, 243, 255, 0.8),
+        transparent
+    );
+    animation: scanline 8s linear infinite;
+    pointer-events: none;
+    z-index: 2;
+}
+
+@keyframes scanline {
+    0% { transform: translateY(0); }
+    100% { transform: translateY(200px); }
+}
+
+/* ============================================================================
+   CUSTOM NAVBAR
+   ============================================================================ */
+
+.navbar-brand {
+    font-weight: 700;
+    font-size: 1.5rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+
+.navbar-brand .company {
+    color: #00f3ff;
+    text-shadow: 0 0 10px rgba(0, 243, 255, 0.5);
+}
+
+.navbar-brand .separator {
+    color: #555;
+    margin: 0 0.5rem;
+}
+
+.navbar-brand .product {
+    color: #fff;
+}
+
+/* ============================================================================
+   STATUS FOOTER
+   ============================================================================ */
+
+.status-footer {
+    background: #0d0d0d;
+    border-top: 1px solid #00f3ff;
+    padding: 0.5rem 1rem;
+    font-size: 0.75rem;
+    color: #888;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.status-footer .status-item {
+    display: inline-flex;
+    align-items: center;
+    margin-right: 1.5rem;
+}
+
+.status-footer .status-label {
+    color: #666;
+    margin-right: 0.3rem;
+}
+
+.status-footer .status-value {
+    color: #00f3ff;
+    font-weight: 500;
+}
+
+.status-footer .status-value.success {
+    color: #00ff41;
+}
+
+.status-footer .status-value.warning {
+    color: #ffaa00;
+}
+
+/* ============================================================================
+   STAT CARDS
+   ============================================================================ */
+
+.stat-card-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #00f3ff;
+    text-shadow: 0 0 5px rgba(0, 243, 255, 0.3);
+}
+
+.stat-card-value.danger {
+    color: #ff2a2a;
+    text-shadow: 0 0 5px rgba(255, 42, 42, 0.3);
+}
+
+.stat-card-value.success {
+    color: #00ff41;
+    text-shadow: 0 0 5px rgba(0, 255, 65, 0.3);
+}
+
+/* ============================================================================
+   LOGS PANEL
+   ============================================================================ */
+
+.log-entry {
+    font-size: 0.8rem;
+    line-height: 1.6;
+    padding: 0.2rem 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.log-entry.critical {
+    color: #ff2a2a;
+    font-weight: 500;
+}
+
+.log-entry.warning {
+    color: #ffaa00;
+}
+
+.log-entry.info {
+    color: #00f3ff;
+}
+
+.log-entry.success {
+    color: #00ff41;
+}
+
+.log-entry.system {
+    color: #888;
+    font-style: italic;
+}
+
+/* ============================================================================
+   BUTTONS
+   ============================================================================ */
+
+.btn-outline-danger:hover,
+.btn-outline-warning:hover {
+    box-shadow: 0 0 10px rgba(255, 42, 42, 0.5);
+}
+
+.btn-success {
+    background: #00ff41 !important;
+    border-color: #00ff41 !important;
+    color: #000 !important;
+    font-weight: 600;
+}
+
+/* ============================================================================
+   UPTIME COUNTER
+   ============================================================================ */
+
+.uptime-counter {
+    font-family: 'JetBrains Mono', monospace;
+    color: #00f3ff;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+/* ============================================================================
+   SCROLLBAR CUSTOMIZATION
+   ============================================================================ */
+
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+    width: 8px;
+    height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #1a1a1a;
+    background: #0a0a0a;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #00ff00;
-  border-radius: 4px;
+    background: #00f3ff;
+    border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #00cc00;
+    background: #00d4dd;
 }
 
-/* Stat Card Animations */
-@keyframes pulse {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.8;
-  }
+/* ============================================================================
+   ANIMATIONS
+   ============================================================================ */
+
+@keyframes blink {
+    0%, 50%, 100% { opacity: 1; }
+    25%, 75% { opacity: 0.3; }
 }
 
-.card-body h4 {
-  animation: pulse 2s infinite;
+.blink-animation {
+    animation: blink 1.5s infinite;
 }
 
-/* Log Panel Styling */
-#live-logs {
-  font-family: "Courier New", monospace;
-  line-height: 1.6;
+/* ============================================================================
+   TAB STYLING
+   ============================================================================ */
+
+.custom-tabs {
+    border-bottom: 2px solid #00f3ff;
 }
 
-/* Chart Containers */
-.js-plotly-plot {
-  border-radius: 8px;
+.custom-tabs .tab {
+    background: #1a1a1a !important;
+    border: 1px solid #333 !important;
+    color: #888 !important;
+    font-weight: 500;
+    padding: 0.75rem 1.5rem;
+    transition: all 0.3s ease;
 }
 
-/* Navbar Enhancement */
-.navbar {
-  box-shadow: 0 2px 4px rgba(0, 255, 0, 0.1);
+.custom-tabs .tab:hover {
+    background: #222 !important;
+    color: #00f3ff !important;
 }
 
-/* Responsive Adjustments */
-@media (max-width: 768px) {
-  .card-body h4 {
-    font-size: 1.2rem;
-  }
+.custom-tabs .tab--selected {
+    background: #0d0d0d !important;
+    border-bottom-color: transparent !important;
+    color: #00f3ff !important;
+    border-top: 2px solid #00f3ff !important;
+}
 
-  #live-logs {
+/* Domain-specific tab indicators */
+.tab-nids.tab--selected {
+    border-top-color: #00d4ff !important;
+    color: #00d4ff !important;
+}
+
+.tab-hids.tab--selected {
+    border-top-color: #ff8800 !important;
+    color: #ff8800 !important;
+}
+
+/* ============================================================================
+   DECISION PIPELINE VISUALIZATION
+   ============================================================================ */
+
+.pipeline-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 0;
+    margin-bottom: 2rem;
+}
+
+.pipeline-stage {
+    flex: 1;
+    text-align: center;
+    padding: 1rem;
+    background: #1a1a1a;
+    border: 2px solid #333;
+    border-radius: 8px;
+    transition: all 0.5s ease;
+    position: relative;
+}
+
+.pipeline-stage.active {
+    border-color: #00d4ff;
+    box-shadow: 0 0 15px rgba(0, 212, 255, 0.3);
+}
+
+.pipeline-stage.success {
+    border-color: #00ff41;
+    background: rgba(0, 255, 65, 0.05);
+    box-shadow: 0 0 15px rgba(0, 255, 65, 0.3);
+}
+
+.pipeline-stage.warning {
+    border-color: #ffaa00;
+    background: rgba(255, 170, 0, 0.05);
+    box-shadow: 0 0 15px rgba(255, 170, 0, 0.3);
+}
+
+.pipeline-stage.danger {
+    border-color: #ff2a2a;
+    background: rgba(255, 42, 42, 0.05);
+    box-shadow: 0 0 15px rgba(255, 42, 42, 0.3);
+    animation: pulse-red 2s infinite;
+}
+
+.pipeline-stage.inactive {
+    opacity: 0.4;
+    border-color: #222;
+}
+
+.pipeline-stage-icon {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+}
+
+.pipeline-stage-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-bottom: 0.3rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.pipeline-stage-subtitle {
+    font-size: 0.7rem;
+    color: #888;
+    font-style: italic;
+}
+
+.pipeline-stage-status {
+    font-size: 0.8rem;
+    font-weight: 500;
+    margin-top: 0.5rem;
+    padding: 0.3rem 0.6rem;
+    border-radius: 4px;
+    display: inline-block;
+}
+
+.pipeline-arrow {
+    flex: 0 0 40px;
+    text-align: center;
+    font-size: 1.5rem;
+    color: #555;
+    transition: color 0.5s ease;
+}
+
+.pipeline-arrow.active {
+    color: #00d4ff;
+    animation: pulse-arrow 1.5s infinite;
+}
+
+@keyframes pulse-arrow {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+}
+
+/* Tooltip styling */
+.pipeline-tooltip {
+    position: relative;
+    cursor: help;
+}
+
+.pipeline-tooltip:hover::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 0.5rem 0.75rem;
+    background: #000;
+    color: #00f3ff;
+    border: 1px solid #00f3ff;
+    border-radius: 4px;
+    white-space: nowrap;
     font-size: 0.75rem;
-  }
+    z-index: 1000;
+    margin-bottom: 0.5rem;
 }

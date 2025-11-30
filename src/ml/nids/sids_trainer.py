@@ -24,21 +24,26 @@ class SIDSTrainer:
     Train SIDS (Signature-based IDS) using supervised learning
     """
     
-    def __init__(self, model_dir='../../models/nids'):
+    def __init__(self, model_dir=None):
         """
         Initialize trainer
         
         Args:
             model_dir: Directory to save trained models
         """
-        self.model_dir = model_dir
+        if model_dir is None:
+            # Resolve relative to this script
+            base_dir = os.path.dirname(os.path.abspath(__file__))
+            model_dir = os.path.join(base_dir, '../../../models/nids')
+            
+        self.model_dir = os.path.normpath(model_dir)
         self.model = None
         self.scaler = None
         self.label_encoder = None
         self.feature_names = None
         
         # Create model directory if it doesn't exist
-        os.makedirs(model_dir, exist_ok=True)
+        os.makedirs(self.model_dir, exist_ok=True)
     
     def train(self, X_train, y_train, n_estimators=100, max_depth=20, random_state=42):
         """
@@ -186,20 +191,28 @@ if __name__ == "__main__":
     loader = CICIDS2017Loader()
     
     try:
-        # Load dataset (use sample for quick testing)
-        logger.info("\nStep 1: Loading dataset...")
-        data = loader.load_data(sample_size=50000)  # Use 50k samples for faster training
+        # Step 1: Check for Sampled Data (Big Data Solution)
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        sampled_data_path = os.path.join(base_dir, '../../../data/processed/train_nids_sampled.csv')
         
-        # Check if using mock data
-        if 'mock' in str(loader.data_dir).lower() or any('mock' in str(f).lower() for f in os.listdir(loader.data_dir) if f.endswith('.csv')):
-            logger.warning("\n" + "="*60)
-            logger.warning("⚠️  WARNING: TRAINING ON MOCK DATA")
-            logger.warning("="*60)
-            logger.warning("Mock data is synthetic and will produce RANDOM results.")
-            logger.warning("Model accuracy will be meaningless.")
-            logger.warning("For real results, download CIC-IDS2017:")
-            logger.warning("  python scripts/download_instructions.py")
-            logger.warning("="*60 + "\n")
+        if os.path.exists(sampled_data_path):
+            logger.info("\nStep 1: Loading SMART SAMPLED dataset (High Accuracy Mode)...")
+            data = loader.load_processed_data(sampled_data_path)
+        else:
+            # Fallback to standard loading (Mock or Raw)
+            logger.info("\nStep 1: Loading dataset (Standard Mode)...")
+            data = loader.load_data(sample_size=50000)
+            
+            # Check if using mock data
+            if 'mock' in str(loader.data_dir).lower() or any('mock' in str(f).lower() for f in os.listdir(loader.data_dir) if f.endswith('.csv')):
+                logger.warning("\n" + "="*60)
+                logger.warning("⚠️  WARNING: TRAINING ON MOCK DATA")
+                logger.warning("="*60)
+                logger.warning("Mock data is synthetic and will produce RANDOM results.")
+                logger.warning("Model accuracy will be meaningless.")
+                logger.warning("For real results, download CIC-IDS2017:")
+                logger.warning("  python scripts/download_instructions.py")
+                logger.warning("="*60 + "\n")
         
         # Preprocess
         logger.info("\nStep 2: Preprocessing...")
@@ -218,6 +231,19 @@ if __name__ == "__main__":
         # Evaluate
         logger.info("\nStep 5: Evaluating model...")
         metrics = trainer.evaluate(X_test, y_test, loader.get_label_encoder())
+        
+        # Save Performance Report
+        report_path = os.path.join(base_dir, '../../../models/performance_report.txt')
+        with open(report_path, 'w') as f:
+            f.write("="*60 + "\n")
+            f.write("HYBRID IDS - MODEL PERFORMANCE REPORT\n")
+            f.write("="*60 + "\n\n")
+            f.write(f"Model: NIDS SIDS (Random Forest)\n")
+            f.write(f"Accuracy: {metrics['accuracy']:.4f}\n\n")
+            f.write("Classification Report:\n")
+            f.write(metrics['classification_report'])
+            f.write("\n" + "="*60 + "\n")
+        logger.info(f"✅ Performance report saved to {report_path}")
         
         # Save
         logger.info("\nStep 6: Saving model...")
